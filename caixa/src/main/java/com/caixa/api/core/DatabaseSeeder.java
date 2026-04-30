@@ -29,7 +29,7 @@ public class DatabaseSeeder implements CommandLineRunner {
             // --- Utilizadores ---
             CoreUser user1 = coreUserRepository.save(CoreUser.builder()
                     .username("alvaro")
-                    .password("123456")
+                    .password("password")
                     .displayName("Alvaro Silva")
                     .build());
 
@@ -63,7 +63,7 @@ public class DatabaseSeeder implements CommandLineRunner {
 
             coreAccountRepository.save(CoreAccount.builder()
                     .accountNumber("PO0001")
-                    .msisdn("2389634521")
+                    .msisdn(null)
                     .partyType("CONSUMER")
                     .displayName("Alvaro Silva - Poupança")
                     .firstName("Alvaro")

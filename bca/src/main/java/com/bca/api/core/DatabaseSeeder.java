@@ -28,9 +28,9 @@ public class DatabaseSeeder implements CommandLineRunner {
 
             // --- Utilizadores ---
             CoreUser user1 = coreUserRepository.save(CoreUser.builder()
-                    .username("alvaro")
-                    .password("123456")
-                    .displayName("Alvaro Silva")
+                    .username("vicente")
+                    .password("password")
+                    .displayName("Vicente Andrade")
                     .build());
 
             CoreUser user2 = coreUserRepository.save(CoreUser.builder()
@@ -50,9 +50,9 @@ public class DatabaseSeeder implements CommandLineRunner {
                     .accountNumber("DO0001")
                     .msisdn("2389512347")
                     .partyType("CONSUMER")
-                    .displayName("Alvaro Silva - Principal")
-                    .firstName("Alvaro")
-                    .lastName("Silva")
+                    .displayName("Vicente Andrade - Principal")
+                    .firstName("Vicente")
+                    .lastName("Andrade")
                     .dateOfBirth("1990-01-01")
                     .balance(new BigDecimal("50000.00"))
                     .currency("CVE")
@@ -63,8 +63,7 @@ public class DatabaseSeeder implements CommandLineRunner {
 
             coreAccountRepository.save(CoreAccount.builder()
                     .accountNumber("PO0001")
-
-                    .msisdn("2389512347")
+                    .msisdn(null)
                     .partyType("CONSUMER")
                     .displayName("Alvaro Silva - Poupança")
                     .firstName("Alvaro")
