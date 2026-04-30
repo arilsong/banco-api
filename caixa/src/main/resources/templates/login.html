@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Caixa - Login Open Banking</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #e9ecef; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-container { background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        .login-container h2 { color: #f39c12; text-align: center; margin-bottom: 2rem; font-weight: 300; }
+        .form-group { margin-bottom: 1.25rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; color: #495057; font-weight: 600; }
+        .form-group input { width: 100%; padding: 0.85rem; border: 2px solid #dee2e6; border-radius: 6px; box-sizing: border-box; transition: border-color 0.2s; }
+        .form-group input:focus { border-color: #f39c12; outline: none; }
+        .btn { width: 100%; padding: 1rem; border: none; border-radius: 6px; background-color: #f39c12; color: white; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: transform 0.2s, background 0.3s; }
+        .btn:hover { background-color: #e67e22; transform: translateY(-2px); }
+        .error { color: #721c24; background: #f8d7da; border: 1px solid #f5c6cb; padding: 0.75rem; border-radius: 6px; margin-bottom: 1.5rem; text-align: center; }
+        .logo { text-align: center; margin-bottom: 1.5rem; }
+        .logo-text { font-size: 2rem; color: #f39c12; font-weight: 900; letter-spacing: -1px; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo"><span class="logo-text">CAIXA</span> <div style="color: #adb5bd; font-size: 0.8rem; letter-spacing: 2px; margin-top: -5px;">OPEN BANKING</div></div>
+        <h2>Acesso Seguro</h2>
+        <div th:if="${error}" class="error" th:text="${error}"></div>
+        <form th:action="@{/login}" method="post">
+            <input type="hidden" name="consentId" th:value="${consentId}">
+            <input type="hidden" name="redirectUri" th:value="${redirectUri}">
+            <div class="form-group">
+                <label for="username">Utilizador</label>
+                <input type="text" id="username" name="username" required autofocus>
+            </div>
+            <div class="form-group">
+                <label for="password">Palavra-passe</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit" class="btn">ENTRAR</button>
+        </form>
+    </div>
+</body>
+</html>

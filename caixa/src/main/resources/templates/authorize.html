@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Caixa - Autorização</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #e9ecef; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .auth-container { background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 500px; text-align: center; }
+        .auth-container h2 { color: #f39c12; margin-bottom: 2rem; font-weight: 300; }
+        .user-box { border-left: 5px solid #f39c12; background: #fff9f0; padding: 1.25rem; text-align: left; margin-bottom: 2rem; border-radius: 4px; }
+        .permissions-list { text-align: left; margin-bottom: 2.5rem; border-top: 1px solid #eee; padding-top: 1.5rem; }
+        .permissions-list h4 { margin-top: 0; color: #495057; }
+        .permissions-list ul { color: #6c757d; }
+        .btn-actions { display: flex; gap: 1.25rem; }
+        .btn { flex: 1; padding: 1rem; border: none; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: transform 0.2s; }
+        .btn-allow { background-color: #27ae60; color: white; }
+        .btn-deny { background-color: #e74c3c; color: white; }
+        .btn:hover { transform: scale(1.02); opacity: 0.95; }
+        .footer-info { font-size: 0.75rem; color: #ced4da; margin-top: 2rem; }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <h2>Consentimento Digital</h2>
+        <div class="user-box">
+            Olá, <strong th:text="${user.displayName}">Utilizador</strong>
+            <div style="font-size: 0.85rem; color: #666;">Bem-vindo ao portal de autorização da Caixa.</div>
+        </div>
+        <p style="color: #495057;">Deseja permitir que a <strong>Fintech Mojaloop</strong> tenha acesso aos dados da sua conta para este serviço?</p>
+        <div class="permissions-list">
+            <h4>Dados solicitados:</h4>
+            <ul>
+                <li>Saldos em tempo real</li>
+                <li>Lista de contas e moedas</li>
+                <li>Detalhes de transações efetuadas</li>
+            </ul>
+        </div>
+        <form th:action="@{/authorize}" method="post">
+            <div class="btn-actions">
+                <button type="submit" name="action" value="cancel" class="btn btn-deny">NEGOU</button>
+                <button type="submit" name="action" value="confirm" class="btn btn-allow">AUTORIZAR</button>
+            </div>
+        </form>
+        <div class="footer-info">ID do Consentimento: <span th:text="${consentId}"></span></div>
+    </div>
+</body>
+</html>

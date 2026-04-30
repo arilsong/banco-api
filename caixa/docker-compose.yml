@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  caixa-backend:
+    build: .
+    container_name: caixa-backend
+    ports:
+      - "8082:8082"
+    environment:
+      - SERVER_PORT=8082
+    # network_mode: host # Uncomment se o SDK estiver noutra stack e for usar host mode
+    
+    # Exemplo do que adicionar no seu compose principal para remover o mock e apontar para este
+    # networks:
+    #   mojaloop-net:
+    #     aliases:
+    #       - caixa-backend
+

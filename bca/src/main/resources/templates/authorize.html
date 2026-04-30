@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>BCA - Autorização</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .auth-container { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 500px; text-align: center; }
+        .auth-container h2 { color: #004a99; margin-bottom: 1.5rem; }
+        .user-info { background: #eef2f7; padding: 1rem; border-radius: 4px; margin-bottom: 1.5rem; color: #333; }
+        .permissions { text-align: left; margin-bottom: 2rem; }
+        .permissions ul { padding-left: 1.5rem; color: #666; }
+        .btn-group { display: flex; gap: 1rem; }
+        .btn { flex: 1; padding: 0.75rem; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; transition: opacity 0.3s; }
+        .btn-confirm { background-color: #28a745; color: white; }
+        .btn-cancel { background-color: #dc3545; color: white; }
+        .btn:hover { opacity: 0.9; }
+        .consent-id { font-size: 0.8rem; color: #999; margin-top: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <h2>Autorização de Acesso</h2>
+        <div class="user-info">
+            Olá, <strong th:text="${user.displayName}">Usuário</strong>!
+        </div>
+        <p>A <strong>Fintech Mojaloop</strong> deseja acessar as seguintes informações da sua conta:</p>
+        <div class="permissions">
+            <ul>
+                <li>Saldos de todas as suas contas</li>
+                <li>Lista de contas e tipos (Corrente/Poupança)</li>
+                <li>Histórico de transações</li>
+            </ul>
+        </div>
+        <form th:action="@{/authorize}" method="post">
+            <div class="btn-group">
+                <button type="submit" name="action" value="cancel" class="btn btn-cancel">Cancelar</button>
+                <button type="submit" name="action" value="confirm" class="btn btn-confirm">Confirmar e Autorizar</button>
+            </div>
+        </form>
+        <div class="consent-id">ID do Consentimento: <span th:text="${consentId}"></span></div>
+    </div>
+</body>
+</html>

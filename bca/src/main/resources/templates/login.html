@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>BCA - Login Open Banking</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-container { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        .login-container h2 { color: #004a99; text-align: center; margin-bottom: 1.5rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; color: #666; }
+        .form-group input { width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .btn { width: 100%; padding: 0.75rem; border: none; border-radius: 4px; background-color: #004a99; color: white; font-size: 1rem; cursor: pointer; transition: background 0.3s; }
+        .btn:hover { background-color: #003366; }
+        .error { color: #d9534f; background: #f2dede; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem; text-align: center; }
+        .logo { text-align: center; margin-bottom: 1rem; font-weight: bold; font-size: 1.5rem; color: #004a99; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">BCA <span style="color: #666; font-size: 0.9rem;">Open Banking</span></div>
+        <h2>Acesse sua conta</h2>
+        <div th:if="${error}" class="error" th:text="${error}"></div>
+        <form th:action="@{/login}" method="post">
+            <input type="hidden" name="consentId" th:value="${consentId}">
+            <input type="hidden" name="redirectUri" th:value="${redirectUri}">
+            <div class="form-group">
+                <label for="username">Usuário</label>
+                <input type="text" id="username" name="username" required autofocus>
+            </div>
+            <div class="form-group">
+                <label for="password">Senha</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit" class="btn">Entrar</button>
+        </form>
+    </div>
+</body>
+</html>
