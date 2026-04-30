@@ -37,8 +37,8 @@ public class AppTransferService {
      */
     public TransferInitiateResponse initiateTransfer(TransferInitiateRequest request) {
         CoreAccount senderAccount = accountRepository.findAll().stream()
-                .filter(acc -> acc.getAccountNumber().equals(request.getFromAccount())
-                            || acc.getMsisdn().equals(request.getFromAccount()))
+                .filter(acc -> request.getFromAccount().equals(acc.getAccountNumber())
+                            || request.getFromAccount().equals(acc.getMsisdn()))
                 .findFirst()
                 .orElse(null);
         String fromMsisdn = senderAccount != null ? senderAccount.getMsisdn() : request.getFromAccount();
