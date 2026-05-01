@@ -38,10 +38,23 @@ public class AppTransferService {
     public TransferInitiateResponse initiateTransfer(TransferInitiateRequest request) {
         CoreAccount senderAccount = accountRepository.findAll().stream()
                 .filter(acc -> request.getFromAccount().equals(acc.getAccountNumber())
-                            || request.getFromAccount().equals(acc.getMsisdn()))
+                        || request.getFromAccount().equals(acc.getMsisdn())
+                        || request.getFromAccount().equals(acc.getBusinessId()))
                 .findFirst()
                 .orElse(null);
-        String fromMsisdn = senderAccount != null ? senderAccount.getMsisdn() : request.getFromAccount();
+
+        // Determine correct idType/idValue for the sender (from).
+        // Business accounts use BUSINESS + businessId; consumers use MSISDN.
+        final String fromIdType;
+        final String fromIdValue;
+        if (senderAccount != null && "BUSINESS".equals(senderAccount.getPartyType())
+                && senderAccount.getBusinessId() != null && !senderAccount.getBusinessId().isBlank()) {
+            fromIdType  = "BUSINESS";
+            fromIdValue = senderAccount.getBusinessId();
+        } else {
+            fromIdType  = "MSISDN";
+            fromIdValue = senderAccount != null ? senderAccount.getMsisdn() : request.getFromAccount();
+        }
 
         String toIdType = (request.getToAccountType() != null && !request.getToAccountType().isBlank())
                 ? request.getToAccountType().toUpperCase()
@@ -49,8 +62,8 @@ public class AppTransferService {
 
         Map<String, Object> body = new HashMap<>();
         body.put("homeTransactionId", UUID.randomUUID().toString());
-        body.put("from", Map.of("idType", "MSISDN", "idValue", fromMsisdn));
-        body.put("to",   Map.of("idType", toIdType,  "idValue", request.getToAccount()));
+        body.put("from", Map.of("idType", fromIdType, "idValue", fromIdValue));
+        body.put("to",   Map.of("idType", toIdType,   "idValue", request.getToAccount()));
         body.put("amountType", "SEND");
         body.put("currency", request.getCurrency());
         body.put("amount", new BigDecimal(request.getAmount()).stripTrailingZeros().toPlainString());

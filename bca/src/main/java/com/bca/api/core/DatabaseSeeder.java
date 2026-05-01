@@ -50,7 +50,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                     .accountNumber("DO0001")
                     .msisdn("2389512347")
                     .partyType("CONSUMER")
-                    .displayName("Vicente Andrade - Principal")
+                    .displayName("Vicente Andrade")
                     .firstName("Vicente")
                     .lastName("Andrade")
                     .dateOfBirth("1990-01-01")
@@ -60,19 +60,6 @@ public class DatabaseSeeder implements CommandLineRunner {
                     .build());
 
             sdkClient.registerParticipant("MSISDN", "2389512347");
-
-            coreAccountRepository.save(CoreAccount.builder()
-                    .accountNumber("PO0001")
-                    .msisdn(null)
-                    .partyType("CONSUMER")
-                    .displayName("Alvaro Silva - Poupança")
-                    .firstName("Alvaro")
-                    .lastName("Silva")
-                    .dateOfBirth("1990-01-01")
-                    .balance(new BigDecimal("1500.00"))
-                    .currency("CVE")
-                    .user(user1)
-                    .build());
 
             coreAccountRepository.save(CoreAccount.builder()
                     .accountNumber("DO0002")
