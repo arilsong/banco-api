@@ -70,7 +70,7 @@ public class AppTransferService {
         body.put("transactionType", "TRANSFER");
 
         try {
-            log.info("Passo 1 (Lookup) no SDK: from={} to={}", fromMsisdn, request.getToAccount());
+            log.info("Passo 1 (Lookup) no SDK: from={}/{} to={}/{}", fromIdType, fromIdValue, toIdType, request.getToAccount());
             ResponseEntity<Map> response = restTemplate.postForEntity(sdkOutboundUrl + "/transfers", body, Map.class);
             Map<String, Object> respBody = response.getBody();
 
