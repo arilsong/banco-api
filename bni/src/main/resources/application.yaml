@@ -1,15 +1,15 @@
 server:
-  port: 8081
+  port: 8083
 
 fsp:
-  id: bca
-  currency: CVE
+  id: bni
+  currency: EUR
 
 spring:
   application:
-    name: bca
+    name: bni
   datasource:
-    url: jdbc:postgresql://postgres:5432/bcacore
+    url: jdbc:postgresql://postgres:5432/bnicore
     driverClassName: org.postgresql.Driver
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
@@ -21,17 +21,16 @@ spring:
 
 logging:
   level:
-    com.bca.api: DEBUG
+    com.bni.api: DEBUG
     org.springframework.web: INFO
 
 sdk:
   outbound:
-    url: http://63.250.58.252:4001
+    url: http://63.250.58.252:6001
 
 fx:
   rates:
-    EUR: 110.20
-    USD: 101.50
-    GBP: 128.40
-    BRL: 19.80
-
+    CVE: 0.00908
+    USD: 0.9217
+    GBP: 1.1623
+    BRL: 0.1958

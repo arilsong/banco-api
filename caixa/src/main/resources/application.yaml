@@ -27,3 +27,10 @@ logging:
 sdk:
   outbound:
     url: http://63.250.58.252:5001
+
+fx:
+  rates:
+    EUR: 110.20
+    USD: 101.50
+    GBP: 128.40
+    BRL: 19.80

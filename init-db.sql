@@ -1,2 +1,3 @@
 CREATE DATABASE bcacore;
 CREATE DATABASE caixacore;
+CREATE DATABASE bnicore;

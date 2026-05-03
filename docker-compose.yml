@@ -52,6 +52,22 @@ services:
     networks:
       - banco-net
 
+  bni-backend:
+    build: ./bni
+    container_name: bni-backend
+    ports:
+      - "8083:8083"
+    environment:
+      - SERVER_PORT=8083
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/bnicore
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - banco-net
+
 networks:
   banco-net:
 
