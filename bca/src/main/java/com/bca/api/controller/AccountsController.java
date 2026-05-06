@@ -21,4 +21,3 @@ public class AccountsController {
                 .orElse(ResponseEntity.notFound().build());
     }
 }
-

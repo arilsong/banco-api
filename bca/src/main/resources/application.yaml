@@ -28,6 +28,10 @@ sdk:
   outbound:
     url: http://63.250.58.252:4001
 
+tp:
+  api:
+    url: http://tp-api-svc.kretxeucv.cv
+
 fx:
   rates:
     EUR: 110.20
