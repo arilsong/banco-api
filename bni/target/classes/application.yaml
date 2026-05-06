@@ -1,0 +1,36 @@
+server:
+  port: 8083
+
+fsp:
+  id: bni
+  currency: EUR
+
+spring:
+  application:
+    name: bni
+  datasource:
+    url: jdbc:postgresql://postgres:5432/bnicore
+    driverClassName: org.postgresql.Driver
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+logging:
+  level:
+    com.bni.api: DEBUG
+    org.springframework.web: INFO
+
+sdk:
+  outbound:
+    url: http://63.250.58.252:6001
+
+fx:
+  rates:
+    CVE: 0.00908
+    USD: 0.9217
+    GBP: 1.1623
+    BRL: 0.1958
