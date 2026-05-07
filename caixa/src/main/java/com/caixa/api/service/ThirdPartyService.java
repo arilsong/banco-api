@@ -107,8 +107,8 @@ public class ThirdPartyService {
                         }
 
                         Map<String, Object> scopeOut = new LinkedHashMap<>();
-                        // O Switch Mojaloop usa o campo 'accountId' no schema consentRequests v2.0
-                        scopeOut.put("accountId", accountId);
+                        // O Switch Mojaloop exige o campo 'address' nos scopes
+                        scopeOut.put("address", accountId);
                         scopeOut.put("actions", scope.get("actions"));
                         scopesOut.add(scopeOut);
                     }

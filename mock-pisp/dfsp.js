@@ -89,7 +89,7 @@ app.post('/consentRequests', (req, res) => {
 
             // Transformar scopes para o formato que o Switch espera (v2.0)
             const scopesOut = scopes.map(s => ({
-                accountId: s.address || s.accountId || `${fspId}.msisdn.${userId}`,
+                address: s.address || s.accountId || `${fspId}.msisdn.${userId}`,
                 actions: s.actions
             }));
 
