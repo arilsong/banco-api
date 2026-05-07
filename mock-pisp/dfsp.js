@@ -150,16 +150,14 @@ app.post('/consentRequests', (req, res) => {
   consentRequests[consentRequestId] = { consentRequestId, userId, scopes, authChannels, callbackUri };
   res.status(202).send();
 
-  // thirdparty-sdk v15.1.3 injeta sempre ["OTP","WEB"] no authChannels (hardcoded).
-  // tp-api-svc v15.1.5 exige authUri quando WEB está presente.
-  // Solução: enviar sempre authToken + authUri com authChannels: ["OTP"].
+  // thirdparty-sdk v15.1.3 injeta sempre ["OTP","WEB"]; tp-api-svc v15.1.5 exige
+  // authUri quando WEB está presente e não aceita authToken no canal WEB.
   after(400, () => callback('PUT', `/consentRequests/${consentRequestId}`, {
     consentRequestId,
     scopes:       transformScopes(scopes),
-    authChannels: ['OTP'],
+    authChannels: ['WEB'],
     callbackUri:  callbackUri || '',
-    authToken:    '123456',
-    authUri:      `http://${FSP_ID}.kretxeucv.cv/authorize?id=${consentRequestId}`,
+    authUri:      `http://${FSP_ID}.kretxeucv.cv/authorize?consentRequestId=${consentRequestId}`,
   }, fspiSource));
 });
 
