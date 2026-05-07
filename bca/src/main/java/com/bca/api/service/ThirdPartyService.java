@@ -89,15 +89,22 @@ public class ThirdPartyService {
             try {
                 HttpHeaders headers = buildTpHeaders(fspiSource);
 
-                // Transformar scopes: accountId → address
+                // Transformar scopes: accountId/msisdn → address (ex: bca.msisdn.2389389274)
                 List<Map<String, Object>> transformedScopes = new ArrayList<>();
                 if (body.containsKey("scopes")) {
                     @SuppressWarnings("unchecked")
                     List<Map<String, Object>> incomingScopes = (List<Map<String, Object>>) body.get("scopes");
                     for (Map<String, Object> scope : incomingScopes) {
-                        String address = scope.containsKey("address")
-                                ? (String) scope.get("address")
-                                : (String) scope.get("accountId");
+                        String address = (String) scope.get("address");
+                        if (address == null) {
+                            address = (String) scope.get("accountId");
+                        }
+                        
+                        // Garantir prefixo bca.msisdn. se for apenas o número
+                        if (address != null && !address.contains(".")) {
+                            address = fspId + ".msisdn." + address;
+                        }
+
                         Map<String, Object> newScope = new LinkedHashMap<>();
                         newScope.put("address", address);
                         newScope.put("actions", scope.get("actions"));
@@ -112,10 +119,10 @@ public class ThirdPartyService {
                 callbackBody.put("authToken", "123456");
 
                 String url = tpApiUrl + "/consentRequests/" + consentRequestId;
-                log.info("Callback consentRequests → PUT {}", url);
+                log.info("Callback consentRequests → PUT {} | Source: {} | Dest: {}", url, fspId, fspiSource);
                 sendJson(HttpMethod.PUT, url, callbackBody, headers);
             } catch (Exception e) {
-                log.error("Erro no callback consentRequests: {}", e.getMessage());
+                log.error("Erro no callback consentRequests para {}: {}", consentRequestId, e.getMessage());
             }
         });
     }

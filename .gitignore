@@ -1,1 +1,7 @@
 .env
+target/
+*.class
+.idea/
+.vscode/
+*.log
+bin/
