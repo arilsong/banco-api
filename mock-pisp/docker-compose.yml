@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  mock-bca:
+    build: .
+    container_name: mock-dfsp-bca
+    command: node dfsp.js
+    ports:
+      - "8081:8081"
+    environment:
+      - PORT=8081
+      - HUB_URL=http://tp-api-svc.kretxeucv.cv
+    networks:
+      - mojaloop-net
+
+networks:
+  mojaloop-net:
+    driver: bridge
