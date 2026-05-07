@@ -94,10 +94,8 @@ app.post('/consentRequests', (req, res) => {
             }));
 
             const callbackBody = {
-                consentRequestId,
                 authChannels,
                 authUri,
-                callbackUri,
                 scopes: scopesOut
             };
 
