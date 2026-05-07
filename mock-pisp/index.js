@@ -1,174 +1,109 @@
+// Adicionar este ficheiro: mock-dfsp-backend.js
 const express = require('express');
 const axios = require('axios');
 const app = express();
-const port = 4015;
-
 app.use(express.json({ type: '*/*' }));
 
-// Armazenar logs em memória para visualizar o flow
-let logs = [];
+const HUB_TP_API = 'http://tp-api-svc.kretxeucv.cv';
+const DFSP_ID = 'bca';
 
-function logAction(action, data) {
-    const logEntry = {
-        timestamp: new Date().toISOString(),
-        action,
-        data
-    };
-    logs.push(logEntry);
-    console.log(`[${logEntry.timestamp}] ${action}:`, JSON.stringify(data, null, 2));
-}
+const hubCallback = async (method, path, body, destination) => {
+  const url = `${HUB_TP_API}${path}`;
+  console.log(`[CALLBACK] ${method} ${url}`);
+  try {
+    const res = await axios({ method, url, data: body, headers: {
+      'Content-Type': 'application/vnd.interoperability.thirdparty+json;version=1.0',
+      'FSPIOP-Source': DFSP_ID,
+      'FSPIOP-Destination': destination || 'Hub',
+      'Date': new Date().toUTCString()
+    }});
+    console.log(`[CALLBACK OK] ${res.status}`);
+  } catch (err) {
+    console.error(`[CALLBACK ERR] ${err.response?.status}`, JSON.stringify(err.response?.data));
+  }
+};
 
-// ─── ENDPOINTS DO MOCK PISP (Switch Mock) ────────────────────────────────────
+// GET /accounts/{userId} — já funciona, só precisa de fazer callback
+app.get('/accounts/:userId', async (req, res) => {
+  const { userId } = req.params;
+  const source = req.headers['fspiop-source'];
+  console.log(`[GET /accounts/${userId}] de ${source}`);
+  res.status(202).send();
 
-// GET /logs - Ver o que está a acontecer
-app.get('/logs', (req, res) => {
-    res.json(logs);
+  setTimeout(async () => {
+    await hubCallback('PUT', `/accounts/${userId}`, {
+      accounts: [{
+        accountNickname: userId === '2389389274' ? 'Maria Santos' : 'Vicente Andrade',
+        id: `bca.msisdn.${userId}`,
+        currency: 'CVE',
+        address: `bca.msisdn.${userId}`
+      }]
+    }, source);
+  }, 200);
 });
 
-// GET / - Dashboard simples em HTML
-app.get('/', (req, res) => {
-    let html = `
-        <html>
-        <head>
-            <title>Mock PISP Dashboard</title>
-            <style>
-                body { font-family: sans-serif; background: #f0f2f5; padding: 20px; }
-                .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-                pre { background: #eee; padding: 10px; border-radius: 4px; overflow-x: auto; }
-                .btn { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block; }
-                .log-entry { border-bottom: 1px solid #ddd; padding: 10px 0; }
-                .action { font-weight: bold; color: #007bff; }
-            </style>
-        </head>
-        <body>
-            <h1>Mock PISP / Switch Mojaloop</h1>
-            <div class="card">
-                <h2>Fase 1: Discovery (Listar Contas)</h2>
-                <button class="btn" onclick="triggerAccounts()">1. Listar Contas (BCA)</button>
-            </div>
-            <div class="card">
-                <h2>Fase 2: Linking (Consentimento)</h2>
-                <button class="btn" onclick="triggerBcaConsent()" style="background: #28a745;">2. Iniciar Consentimento BCA</button>
-            </div>
-            <div class="card">
-                <h2>Logs de Rede</h2>
-                <div id="logs">
-                    ${logs.slice().reverse().map(l => `
-                        <div class="log-entry">
-                            <span class="action">${l.action}</span> - ${l.timestamp}<br>
-                            <pre>${JSON.stringify(l.data, null, 2)}</pre>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-            <script>
-                async function triggerAccounts() {
-                    const res = await fetch('/trigger/accounts/2389389274');
-                    alert(await res.text());
-                    location.reload();
-                }
-                async function triggerBcaConsent() {
-                    const res = await fetch('/trigger/bca');
-                    alert(await res.text());
-                    location.reload();
-                }
-                // Refresh automático
-                setTimeout(() => location.reload(), 5000);
-            </script>
-        </body>
-        </html>
-    `;
-    res.send(html);
+// POST /consentRequests — recebe e faz callback com OTP fixo
+app.post('/consentRequests', async (req, res) => {
+  const { consentRequestId, userId, scopes, authChannels, callbackUri } = req.body;
+  const source = req.headers['fspiop-source'];
+  console.log(`[POST /consentRequests] id=${consentRequestId} de ${source}`);
+  res.status(202).send();
+
+  setTimeout(async () => {
+    await hubCallback('PUT', `/consentRequests/${consentRequestId}`, {
+      consentRequestId,
+      scopes,
+      authChannels: ['OTP'],
+      callbackUri,
+      authToken: '123456'
+    }, source);
+  }, 500);
 });
 
-// ─── SIMULAÇÃO DE TRIGGER (PISP chamando DFSP) ───────────────────────────────
+// PATCH /consentRequests/{ID} — confirma OTP e cria consent
+app.patch('/consentRequests/:id', async (req, res) => {
+  const { id } = req.params;
+  const { scopes } = req.body;
+  const source = req.headers['fspiop-source'];
+  console.log(`[PATCH /consentRequests/${id}] OTP confirmado de ${source}`);
+  res.status(202).send();
 
-app.get('/trigger/accounts/:userId', async (req, res) => {
-    const userId = req.params.userId;
-    const dfspUrl = 'http://localhost:8081'; // BCA
-    
-    logAction(`Iniciando Account Discovery para ${userId}`, { url: `${dfspUrl}/accounts/${userId}` });
-
-    try {
-        await axios.get(`${dfspUrl}/accounts/${userId}`, {
-            headers: { 'FSPIOP-Source': 'meu-pisp' }
-        });
-        res.send(`Account Discovery iniciado para ${userId}`);
-    } catch (error) {
-        logAction(`Erro no Discovery`, error.message);
-        res.status(500).send(`Erro: ${error.message}`);
-    }
+  const consentId = require('crypto').randomUUID();
+  setTimeout(async () => {
+    await hubCallback('POST', '/consents', {
+      consentId,
+      consentRequestId: id,
+      scopes: scopes || [],
+      status: 'ISSUED'
+    }, source);
+  }, 500);
 });
 
-app.get('/trigger/:bank', async (req, res) => {
-    const bank = req.params.bank;
-    const dfspUrl = bank === 'bca' ? 'http://localhost:8081' : 'http://localhost:8082';
-    const consentRequestId = `req-${Date.now()}`;
-    
-    const body = {
-        consentRequestId: consentRequestId,
-        userId: "2389389274",
-        scopes: [
-            {
-                accountId: "2389389274",
-                actions: ["ACCOUNTS_GET_BALANCE", "ACCOUNTS_TRANSFER"]
-            }
-        ],
-        authChannels: ["OTP"],
-        callbackUri: `http://localhost:${port}`
-    };
+// POST /consents/{ID} — valida credencial FIDO (aceita sempre)
+app.post('/consents/:id', async (req, res) => {
+  const { id } = req.params;
+  const source = req.headers['fspiop-source'];
+  console.log(`[POST /consents/${id}] credencial recebida de ${source}`);
+  res.status(202).send();
 
-    logAction(`Iniciando ConsentRequest no ${bank.toUpperCase()}`, { url: `${dfspUrl}/consentRequests`, body });
-
-    try {
-        await axios.post(`${dfspUrl}/consentRequests`, body, {
-            headers: { 'FSPIOP-Source': 'meu-pisp' }
-        });
-        res.send(`ConsentRequest iniciado no ${bank.toUpperCase()}! ID: ${consentRequestId}`);
-    } catch (error) {
-        logAction(`Erro ao iniciar no ${bank.toUpperCase()}`, error.message);
-        res.status(500).send(`Erro: ${error.message}`);
-    }
+  setTimeout(async () => {
+    await hubCallback('PATCH', `/consents/${id}`, {
+      credential: {
+        credentialType: 'FIDO',
+        status: 'VERIFIED',
+        payload: {
+          id: 'HskU2gw4np09IUtYNHnxMM696jJHqvccUdBmd0xP6XEWwH0xLei1PUzDJCM19SZ3A2Ex0fNLw0nc2hrIlFnAtw',
+          rawId: 'HskU2gw4np09IUtYNHnxMM696jJHqvccUdBmd0xP6XEWwH0xLei1PUzDJCM19SZ3A2Ex0fNLw0nc2hrIlFnAtw==',
+          response: { clientDataJSON: 'e30=', attestationObject: 'e30=' },
+          type: 'public-key'
+        }
+      },
+      status: 'ACTIVE'
+    }, 'centralauth');
+  }, 500);
 });
 
-// ─── RECEBENDO CALLBACKS (Simulando o Switch) ────────────────────────────────
-
-// PUT /accounts/{userId}
-app.put('/accounts/:userId', (req, res) => {
-    logAction(`Recebido PUT /accounts/${req.params.userId}`, {
-        headers: req.headers,
-        body: req.body
-    });
-    res.status(202).send();
-});
-
-// PUT /consentRequests/{ID}
-app.put('/consentRequests/:id', (req, res) => {
-    logAction(`Recebido PUT /consentRequests/${req.params.id}`, {
-        headers: req.headers,
-        body: req.body
-    });
-    res.status(202).send();
-});
-
-// POST /consents
-app.post('/consents', (req, res) => {
-    logAction(`Recebido POST /consents`, {
-        headers: req.headers,
-        body: req.body
-    });
-    res.status(202).send();
-});
-
-// PATCH /consents/{id}
-app.patch('/consents/:id', (req, res) => {
-    logAction(`Recebido PATCH /consents/${req.params.id}`, {
-        headers: req.headers,
-        body: req.body
-    });
-    res.status(202).send();
-});
-
-app.listen(port, () => {
-    console.log(`Mock PISP rodando em http://localhost:${port}`);
+app.listen(8081, () => {
+  console.log('[Mock Backend] Rodando em http://localhost:8081');
+  console.log('[Mock Backend] Pronto para receber chamadas do Hub');
 });
