@@ -70,30 +70,34 @@ app.get('/accounts/:userId', (req, res) => {
 
 // POST /consentRequests
 app.post('/consentRequests', (req, res) => {
-    const body = req.body;
-    const consentRequestId = body.consentRequestId;
+    const { consentRequestId, userId, authChannels, callbackUri, scopes } = req.body;
     const fspiSource = req.headers['fspiop-source'] || 'meu-pisp';
     
     console.log(`[DFSP Node] Recebido POST /consentRequests: ${consentRequestId}`);
-    consentRequests[consentRequestId] = body;
+    
+    if (!scopes || !Array.isArray(scopes)) {
+        console.error("[DFSP Node] Erro: scopes ausente ou inválido");
+        return res.status(400).json({ error: 'scopes obrigatório e deve ser um array' });
+    }
 
-    // Simular processamento assíncrono (como o Java CompletableFuture)
+    consentRequests[consentRequestId] = req.body;
+
+    // Simular processamento assíncrono
     setTimeout(async () => {
         try {
-            const callbackUri = body.callbackUri;
             const authUri = `${callbackUri}/linking/request-consent/${consentRequestId}/authenticate`;
 
             // Transformar scopes para o formato que o Switch espera (v2.0)
-            const scopesOut = body.scopes.map(s => ({
-                accountId: s.address || s.accountId || `${fspId}.msisdn.${body.userId}`,
+            const scopesOut = scopes.map(s => ({
+                accountId: s.address || s.accountId || `${fspId}.msisdn.${userId}`,
                 actions: s.actions
             }));
 
             const callbackBody = {
-                consentRequestId: consentRequestId,
-                authChannels: body.authChannels,
-                authUri: authUri,
-                callbackUri: callbackUri,
+                consentRequestId,
+                authChannels,
+                authUri,
+                callbackUri,
                 scopes: scopesOut
             };
 
@@ -112,7 +116,7 @@ app.post('/consentRequests', (req, res) => {
             console.log(`[DFSP Node] PUT Callback enviado com sucesso!`);
             
             // Simular envio de SMS OTP
-            console.log(`[SMS] Enviando OTP para o usuário ${body.userId}...`);
+            console.log(`[SMS] Enviando OTP para o usuário ${userId}...`);
             
         } catch (error) {
             console.error(`[DFSP Node] Erro no callback:`, error.response?.data || error.message);
