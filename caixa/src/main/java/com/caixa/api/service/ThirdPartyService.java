@@ -121,11 +121,12 @@ public class ThirdPartyService {
                         + "/linking/request-consent/" + consentRequestId + "/authenticate";
 
                 // Body do PUT estritamente conforme schema FSPIOP v2.0
-                // APENAS 3 campos: authChannels, authUri, scopes
-                // consentRequestId e callbackUri são propriedades adicionais proibidas no PUT
+                // APENAS 4 campos: authChannels, authUri, callbackUri, scopes
+                // O consentRequestId é removido do body pois causa erro de 'Too many elements' (já está no URL)
                 Map<String, Object> callbackBody = new LinkedHashMap<>();
                 callbackBody.put("authChannels", body.get("authChannels"));
                 callbackBody.put("authUri", authUri);
+                callbackBody.put("callbackUri", callbackUri);
                 callbackBody.put("scopes", scopesOut);
 
                 String url = tpApiUrl + "/consentRequests/" + consentRequestId;
