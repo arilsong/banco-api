@@ -120,7 +120,8 @@ public class ThirdPartyService {
                 String authUri = (callbackUri != null ? callbackUri : "")
                         + "/linking/request-consent/" + consentRequestId + "/authenticate";
 
-                // Body do PUT conforme schema FSPIOP consentRequests v2.0
+                // Body do PUT estritamente conforme schema FSPIOP v2.0
+                // APENAS 5 campos: consentRequestId, authChannels, authUri, callbackUri, scopes
                 Map<String, Object> callbackBody = new LinkedHashMap<>();
                 callbackBody.put("consentRequestId", consentRequestId);
                 callbackBody.put("authChannels", body.get("authChannels"));
