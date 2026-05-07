@@ -73,7 +73,7 @@ app.post('/consentRequests', (req, res) => {
     const { consentRequestId, userId, authChannels, callbackUri, scopes } = req.body;
     const fspiSource = req.headers['fspiop-source'] || 'meu-pisp';
     
-    console.log(`[DFSP Node] Recebido POST /consentRequests: ${consentRequestId}`);
+    console.log(`[DFSP Node] Recebido POST /consentRequests: ${consentRequestId} | AuthChannels: ${JSON.stringify(authChannels)}`);
     
     if (!scopes || !Array.isArray(scopes)) {
         console.error("[DFSP Node] Erro: scopes ausente ou inválido");
@@ -94,7 +94,7 @@ app.post('/consentRequests', (req, res) => {
             }));
 
             const callbackBody = {
-                authChannels,
+                authChannels: ["OTP"],
                 authUri,
                 callbackUri,
                 scopes: scopesOut

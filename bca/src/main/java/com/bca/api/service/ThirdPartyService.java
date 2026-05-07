@@ -124,7 +124,7 @@ public class ThirdPartyService {
                 // APENAS 4 campos: authChannels, authUri, callbackUri, scopes
                 // O consentRequestId é removido do body pois causa erro de 'Too many elements' (já está no URL)
                 Map<String, Object> callbackBody = new LinkedHashMap<>();
-                callbackBody.put("authChannels", body.get("authChannels"));
+                callbackBody.put("authChannels", List.of("OTP"));
                 callbackBody.put("authUri", authUri);
                 callbackBody.put("callbackUri", callbackUri);
                 callbackBody.put("scopes", scopesOut);
