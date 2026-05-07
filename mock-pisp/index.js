@@ -3,7 +3,7 @@ const axios = require('axios');
 const app = express();
 const port = 4015;
 
-app.use(express.json());
+app.use(express.json({ type: '*/*' }));
 
 // Armazenar logs em memória para visualizar o flow
 let logs = [];

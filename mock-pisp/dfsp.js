@@ -3,7 +3,7 @@ const axios = require('axios');
 const app = express();
 const port = process.env.PORT || 8081; 
 
-app.use(express.json());
+app.use(express.json({ type: '*/*' }));
 
 const fspId = 'bca';
 const tpApiUrl = process.env.HUB_URL || 'http://localhost:4015'; 
