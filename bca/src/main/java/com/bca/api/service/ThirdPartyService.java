@@ -123,6 +123,7 @@ public class ThirdPartyService {
                 sendJson(HttpMethod.PUT, url, callbackBody, headers);
             } catch (Exception e) {
                 log.error("Erro no callback consentRequests para {}: {}", consentRequestId, e.getMessage());
+                sendErrorCallback("/consentRequests/" + consentRequestId + "/error", "3200", "Consent Request Error", fspiSource);
             }
         });
     }
@@ -153,20 +154,20 @@ public class ThirdPartyService {
 
             } catch (Exception e) {
                 log.error("Erro ao criar consent: {}", e.getMessage());
+                sendErrorCallback("/consents/error", "3200", "Consent Creation Error", fspiSource);
             }
         });
     }
 
     // ─── CONSENTS ────────────────────────────────────────────────────────────
 
-    public void handleConsent(Map<String, Object> body, String fspiSource) {
-        String consentId = (String) body.get("consentId");
+    public void handleConsentPatch(String consentId, Map<String, Object> body, String fspiSource) {
+        log.info("Consent PATCH recebido: id={}", consentId);
         consents.put(consentId, new HashMap<>(body));
-        log.info("Consent recebido: id={}", consentId);
 
         CompletableFuture.runAsync(() -> {
             try {
-                HttpHeaders headers = buildTpHeaders("centralauth");
+                HttpHeaders headers = buildTpHeaders(fspiSource);
 
                 @SuppressWarnings("unchecked")
                 Map<String, Object> incomingCredential = body.containsKey("credential")
@@ -174,17 +175,34 @@ public class ThirdPartyService {
                         : new HashMap<>();
                 incomingCredential.put("status", "VERIFIED");
 
-                Map<String, Object> callbackBody = new HashMap<>();
+                Map<String, Object> callbackBody = new LinkedHashMap<>();
+                callbackBody.put("consentId", consentId);
                 callbackBody.put("credential", incomingCredential);
                 callbackBody.put("status", "ACTIVE");
 
                 String url = tpApiUrl + "/consents/" + consentId;
-                log.info("Confirmar consent → PATCH {}", url);
-                sendJson(HttpMethod.PATCH, url, callbackBody, headers);
+                log.info("Callback consent → PUT {}", url);
+                sendJson(HttpMethod.PUT, url, callbackBody, headers);
             } catch (Exception e) {
                 log.error("Erro ao confirmar consent: {}", e.getMessage());
+                sendErrorCallback("/consents/" + consentId + "/error", "3200", "Generic Consent Error", fspiSource);
             }
         });
+    }
+
+    private void sendErrorCallback(String path, String errorCode, String errorDescription, String fspiDestination) {
+        try {
+            HttpHeaders headers = buildTpHeaders(fspiDestination);
+            Map<String, Object> errorInfo = Map.of(
+                    "errorInformation", Map.of(
+                            "errorCode", errorCode,
+                            "errorDescription", errorDescription
+                    )
+            );
+            sendJson(HttpMethod.PUT, tpApiUrl + path, errorInfo, headers);
+        } catch (Exception e) {
+            log.error("Falha ao enviar callback de erro para {}: {}", path, e.getMessage());
+        }
     }
 
     // ─── TRANSFER ────────────────────────────────────────────────────────────
@@ -245,6 +263,7 @@ public class ThirdPartyService {
 
             } catch (Exception e) {
                 log.error("Erro ao processar transactionRequest: {}", e.getMessage());
+                sendErrorCallback("/thirdpartyRequests/transactions/" + transactionRequestId + "/error", "3200", "Transaction Request Error", fspiSource);
             }
         });
     }
