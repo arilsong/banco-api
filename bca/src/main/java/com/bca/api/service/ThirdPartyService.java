@@ -87,40 +87,51 @@ public class ThirdPartyService {
 
         CompletableFuture.runAsync(() -> {
             try {
-                HttpHeaders headers = buildTpHeaders(fspiSource);
+                // Headers específicos para consentRequests (media-type v2.0)
+                HttpHeaders headers = buildConsentRequestHeaders(fspiSource);
 
-                // Transformar scopes: accountId/msisdn → address (ex: bca.msisdn.2389389274)
-                List<Map<String, Object>> transformedScopes = new ArrayList<>();
+                // Scopes: usar accountId no formato fspId.msisdn.<numero>
+                List<Map<String, Object>> scopesOut = new ArrayList<>();
                 if (body.containsKey("scopes")) {
                     @SuppressWarnings("unchecked")
                     List<Map<String, Object>> incomingScopes = (List<Map<String, Object>>) body.get("scopes");
                     for (Map<String, Object> scope : incomingScopes) {
-                        String address = (String) scope.get("address");
-                        if (address == null) {
-                            address = (String) scope.get("accountId");
-                        }
-                        
-                        // Garantir prefixo bca.msisdn. se for apenas o número
-                        if (address != null && !address.contains(".")) {
-                            address = fspId + ".msisdn." + address;
+                        // Preferir 'address', fallback para 'accountId'
+                        String accountId = scope.containsKey("address")
+                                ? (String) scope.get("address")
+                                : (String) scope.get("accountId");
+
+                        // Garantir prefixo fspId.msisdn. se for apenas o número
+                        if (accountId != null && !accountId.contains(".")) {
+                            accountId = fspId + ".msisdn." + accountId;
                         }
 
-                        Map<String, Object> newScope = new LinkedHashMap<>();
-                        newScope.put("address", address);
-                        newScope.put("actions", scope.get("actions"));
-                        transformedScopes.add(newScope);
+                        Map<String, Object> scopeOut = new LinkedHashMap<>();
+                        // O Switch Mojaloop usa o campo 'accountId' no schema consentRequests v2.0
+                        scopeOut.put("accountId", accountId);
+                        scopeOut.put("actions", scope.get("actions"));
+                        scopesOut.add(scopeOut);
                     }
                 }
 
+                // Construir authUri para canal OTP:
+                // http://<callbackUri>/linking/request-consent/{consentRequestId}/authenticate
+                String callbackUri = (String) body.get("callbackUri");
+                String authUri = (callbackUri != null ? callbackUri : "")
+                        + "/linking/request-consent/" + consentRequestId + "/authenticate";
+
+                // Body do PUT conforme schema FSPIOP consentRequests v2.0
                 Map<String, Object> callbackBody = new LinkedHashMap<>();
-                callbackBody.put("scopes", transformedScopes);
+                callbackBody.put("consentRequestId", consentRequestId);
                 callbackBody.put("authChannels", body.get("authChannels"));
-                callbackBody.put("callbackUri", body.get("callbackUri"));
-                callbackBody.put("authToken", "123456");
+                callbackBody.put("authUri", authUri);
+                callbackBody.put("scopes", scopesOut);
 
                 String url = tpApiUrl + "/consentRequests/" + consentRequestId;
-                log.info("Callback consentRequests → PUT {} | Source: {} | Dest: {}", url, fspId, fspiSource);
+                log.info("Callback consentRequests → PUT {} | authUri={} | Source={} | Dest={}",
+                        url, authUri, fspId, fspiSource);
                 sendJson(HttpMethod.PUT, url, callbackBody, headers);
+
             } catch (Exception e) {
                 log.error("Erro no callback consentRequests para {}: {}", consentRequestId, e.getMessage());
             }
@@ -284,6 +295,21 @@ public class ThirdPartyService {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Content-Type", "application/vnd.interoperability.thirdparty+json;version=1.0");
         headers.set("Accept", "application/vnd.interoperability.thirdparty+json;version=1.0");
+        headers.set("FSPIOP-Source", fspId);
+        headers.set("FSPIOP-Destination", fspiDestination != null ? fspiDestination : "hub");
+        headers.set("Date", utcDate());
+        return headers;
+    }
+
+    /**
+     * Headers específicos para o endpoint PUT /consentRequests/{ID}.
+     * O Switch Mojaloop usa o media-type consentRequests+json;version=2.0
+     * em vez do thirdparty+json genérico.
+     */
+    private HttpHeaders buildConsentRequestHeaders(String fspiDestination) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Content-Type", "application/vnd.interoperability.consentRequests+json;version=2.0");
+        headers.set("Accept", "application/vnd.interoperability.consentRequests+json;version=2.0");
         headers.set("FSPIOP-Source", fspId);
         headers.set("FSPIOP-Destination", fspiDestination != null ? fspiDestination : "hub");
         headers.set("Date", utcDate());
