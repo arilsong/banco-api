@@ -51,11 +51,15 @@ public class ThirdPartyService {
 
         accountRepository.findAll().stream()
                 .filter(acc -> userId.equals(acc.getMsisdn()))
-                .forEach(acc -> accounts.add(Map.of(
-                        "accountNickname", buildNickname(acc),
-                        "id", fspId + ".msisdn." + acc.getMsisdn(),
-                        "currency", acc.getCurrency() != null ? acc.getCurrency() : fspCurrency
-                )));
+                .forEach(acc -> {
+                    String accountId = fspId + ".msisdn." + acc.getMsisdn();
+                    accounts.add(Map.of(
+                            "accountNickname", buildNickname(acc),
+                            "id", accountId,
+                            "currency", acc.getCurrency() != null ? acc.getCurrency() : fspCurrency,
+                            "address", accountId
+                    ));
+                });
 
         if (accounts.isEmpty()) {
             log.warn("Nenhuma conta encontrada para userId={}", userId);
