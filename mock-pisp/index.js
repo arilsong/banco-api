@@ -10,16 +10,23 @@ const DFSP_ID = 'bca';
 const hubCallback = async (method, path, body, destination) => {
   const url = `${HUB_TP_API}${path}`;
   console.log(`[CALLBACK] ${method} ${url}`);
+  console.log('BODY DO CALLBACK:', JSON.stringify(body, null, 2));
+  
   try {
-    const res = await axios({ method, url, data: body, headers: {
-      'Content-Type': 'application/vnd.interoperability.thirdparty+json;version=1.0',
-      'FSPIOP-Source': DFSP_ID,
-      'FSPIOP-Destination': destination || 'Hub',
-      'Date': new Date().toUTCString()
-    }});
+    const res = await axios({ 
+      method, 
+      url, 
+      data: body, 
+      headers: {
+        'Content-Type': 'application/vnd.interoperability.thirdparty+json;version=1.0',
+        'FSPIOP-Source': DFSP_ID,
+        'FSPIOP-Destination': destination || 'Hub',
+        'Date': new Date().toUTCString()
+      }
+    });
     console.log(`[CALLBACK OK] ${res.status}`);
   } catch (err) {
-    console.error(`[CALLBACK ERR] ${err.response?.status}`, JSON.stringify(err.response?.data));
+    console.log('ERRO DO HUB:', err.response?.status, JSON.stringify(err.response?.data, null, 2));
   }
 };
 
