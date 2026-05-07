@@ -32,6 +32,10 @@ tp:
   api:
     url: http://tp-api-svc.kretxeucv.cv
 
+fee:
+  percentage: 1.0   # taxa em percentagem do montante (ex: 1.0 = 1%)
+  currency: CVE
+
 fx:
   rates:
     EUR: 110.20
