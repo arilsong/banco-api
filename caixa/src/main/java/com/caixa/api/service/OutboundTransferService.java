@@ -114,9 +114,9 @@ public class OutboundTransferService {
             return TransferConfirmPartyResponse.builder()
                     .transferId((String) respBody.get("transferId"))
                     .quote(TransferConfirmPartyResponse.QuoteInfo.builder()
-                            .transferAmount((String) amountMap.get("amount"))
+                            .transferAmount(new BigDecimal((String) amountMap.get("amount")).stripTrailingZeros().toPlainString())
                             .currency((String) amountMap.get("currency"))
-                            .fee(feeMap != null ? (String) feeMap.get("amount") : "0")
+                            .fee(feeMap != null ? new BigDecimal((String) feeMap.get("amount")).stripTrailingZeros().toPlainString() : "0")
                             .expiration((String) quoteBody.get("expiration"))
                             .build())
                     .build();

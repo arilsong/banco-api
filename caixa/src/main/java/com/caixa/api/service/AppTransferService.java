@@ -121,12 +121,13 @@ public class AppTransferService {
             Map<String, Object> amountMap = (Map<String, Object>) quoteBody.get("transferAmount");
             Map<String, Object> feeMap    = (Map<String, Object>) quoteBody.get("payeeFspFee");
 
+            String sdkId2 = (String) respBody.get("transferId");
             return TransferConfirmPartyResponse.builder()
-                    .transferId((String) respBody.get("transferId"))
+                    .transferId(sdkId2 != null && !sdkId2.isBlank() ? sdkId2 : transferId)
                     .quote(TransferConfirmPartyResponse.QuoteInfo.builder()
-                            .transferAmount((String) amountMap.get("amount"))
+                            .transferAmount(new BigDecimal((String) amountMap.get("amount")).stripTrailingZeros().toPlainString())
                             .currency((String) amountMap.get("currency"))
-                            .fee(feeMap != null ? (String) feeMap.get("amount") : "0")
+                            .fee(feeMap != null ? new BigDecimal((String) feeMap.get("amount")).stripTrailingZeros().toPlainString() : "0")
                             .expiration((String) quoteBody.get("expiration"))
                             .build())
                     .build();
@@ -158,11 +159,14 @@ public class AppTransferService {
 
             String currentState = (String) respBody.get("currentState");
 
+            String sdkId3 = (String) respBody.get("transferId");
+            String resolvedId = (sdkId3 != null && !sdkId3.isBlank()) ? sdkId3 : transferId;
+
             if ("COMMITTED".equals(currentState) || "COMPLETED".equals(currentState)) {
-                log.info("Passo 3 concluído [CAIXA]. Registrando débito local para transferId={}", transferId);
+                log.info("Passo 3 concluído [CAIXA]. Registrando débito local para transferId={}", resolvedId);
 
                 TransferRequest localReq = new TransferRequest();
-                localReq.setTransferId((String) respBody.get("transferId"));
+                localReq.setTransferId(resolvedId);
                 if (respBody.get("amount") != null) localReq.setAmount(respBody.get("amount").toString());
                 if (respBody.get("currency") != null) localReq.setCurrency(respBody.get("currency").toString());
 
@@ -181,7 +185,7 @@ public class AppTransferService {
             }
 
             return TransferConfirmQuoteResponse.builder()
-                    .transferId((String) respBody.get("transferId"))
+                    .transferId(resolvedId)
                     .status(currentState)
                     .build();
         } catch (Exception e) {

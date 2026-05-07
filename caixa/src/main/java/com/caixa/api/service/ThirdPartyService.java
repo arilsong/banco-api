@@ -12,6 +12,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.math.BigDecimal;
 import java.security.MessageDigest;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -202,7 +203,8 @@ public class ThirdPartyService {
                 String amount = (String) amountMap.getOrDefault("amount", "0");
 
                 String challenge = buildChallenge(transactionRequestId + ":" + transactionId);
-                Map<String, Object> moneyAmount = Map.of("currency", currency, "amount", amount);
+                String formattedAmount = new BigDecimal(amount).stripTrailingZeros().toPlainString();
+                Map<String, Object> moneyAmount = Map.of("currency", currency, "amount", formattedAmount);
 
                 Map<String, Object> authRequest = new LinkedHashMap<>();
                 authRequest.put("authorizationRequestId", authorizationRequestId);

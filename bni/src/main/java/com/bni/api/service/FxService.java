@@ -56,8 +56,8 @@ public class FxService {
         responseTerms.put("initiatingFsp", terms.getInitiatingFsp());
         responseTerms.put("counterPartyFsp", terms.getCounterPartyFsp());
         responseTerms.put("amountType", terms.getAmountType());
-        responseTerms.put("sourceAmount", Map.of("currency", sourceCurrency, "amount", terms.getSourceAmount().getAmount()));
-        responseTerms.put("targetAmount", Map.of("currency", targetCurrency, "amount", targetAmt.toPlainString()));
+        responseTerms.put("sourceAmount", Map.of("currency", sourceCurrency, "amount", new BigDecimal(terms.getSourceAmount().getAmount()).stripTrailingZeros().toPlainString()));
+        responseTerms.put("targetAmount", Map.of("currency", targetCurrency, "amount", targetAmt.stripTrailingZeros().toPlainString()));
         responseTerms.put("expiration", terms.getExpiration() != null ? terms.getExpiration()
                 : Instant.now().plusSeconds(30).toString());
         responseTerms.put("charges", new Object[0]);
