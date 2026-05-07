@@ -1,163 +1,96 @@
 const express = require('express');
-const axios = require('axios');
 const app = express();
-const port = process.env.PORT || 8081; 
+const port = process.env.PORT || 8081;
 
 app.use(express.json({ type: '*/*' }));
 
-const fspId = 'bca';
-const tpApiUrl = process.env.HUB_URL || 'http://localhost:4015'; 
+console.log(`[Mock Backend] Iniciando Simulador Core na porta ${port}...`);
 
-// Simulação de base de dados em memória
-const consentRequests = {};
+// --- BASE DE DADOS EM MEMÓRIA ---
 const accounts = [
     {
+        accountNickname: "Conta Arilson (Mock)",
         id: "bca.msisdn.2389389274",
         currency: "CVE",
-        nickname: "Conta Corrente Arilson",
-        userId: "2389389274"
+        address: "bca.msisdn.2389389274"
     },
     {
+        accountNickname: "Poupança Mock",
         id: "bca.msisdn.999112233",
         currency: "CVE",
-        nickname: "Conta Poupança Teste",
-        userId: "999112233"
+        address: "bca.msisdn.999112233"
     }
 ];
 
-console.log(`[DFSP Node] Iniciando simulador BCA na porta ${port}...`);
+// --- ENDPOINTS PARA O THIRDPARTY-SDK ---
 
-// ─── LINKING ENDPOINTS ──────────────────────────────────────────────────────
-
-// GET /accounts/{userId} - Chamado pelo Switch para listar contas do utilizador
+/**
+ * 1. GET /accounts/{userId}
+ */
 app.get('/accounts/:userId', (req, res) => {
-    const userId = req.params.userId;
-    const fspiSource = req.headers['fspiop-source'] || 'meu-pisp';
+    const { userId } = req.params;
+    console.log(`[Mock Backend] GET /accounts/${userId}`);
     
-    console.log(`[DFSP Node] Recebido GET /accounts/${userId} de ${fspiSource}`);
-
-    const userAccounts = accounts.filter(acc => acc.userId === userId).map(acc => ({
-        accountNickname: acc.nickname,
-        id: acc.id,
-        currency: acc.currency,
-        address: acc.id
-    }));
-
-    // Enviar callback PUT /accounts/{userId}
-    setTimeout(async () => {
-        try {
-            const url = `${tpApiUrl}/accounts/${userId}`;
-            console.log(`[DFSP Node] Enviando Callback de Contas PUT ${url}`);
-
-            await axios.put(url, { accounts: userAccounts }, {
-                headers: {
-                    'Content-Type': 'application/vnd.interoperability.thirdparty+json;version=1.0',
-                    'FSPIOP-Source': fspId,
-                    'FSPIOP-Destination': fspiSource,
-                    'Date': new Date().toUTCString()
-                }
-            });
-            console.log(`[DFSP Node] Callback de contas enviado!`);
-        } catch (error) {
-            console.error(`[DFSP Node] Erro no callback de contas:`, error.message);
-        }
-    }, 500);
-
-    res.status(202).send();
+    // Filtra contas se o userId bater, senão retorna as padrão
+    const result = accounts.filter(a => a.id.includes(userId));
+    res.json({ accounts: result.length > 0 ? result : accounts });
 });
 
-// ─── ENDPOINTS MOJALOOP INBOUND (O que o Switch chama) ──────────────────────
-
-// POST /consentRequests
+/**
+ * 2. POST /consentRequests
+ */
 app.post('/consentRequests', (req, res) => {
-    const { consentRequestId, userId, authChannels, callbackUri, scopes } = req.body;
-    const fspiSource = req.headers['fspiop-source'] || 'meu-pisp';
-    
-    console.log(`[DFSP Node] Recebido POST /consentRequests: ${consentRequestId} | AuthChannels: ${JSON.stringify(authChannels)}`);
-    
-    if (!scopes || !Array.isArray(scopes)) {
-        console.error("[DFSP Node] Erro: scopes ausente ou inválido");
-        return res.status(400).json({ error: 'scopes obrigatório e deve ser um array' });
-    }
+    const { consentRequestId, userId } = req.body;
+    console.log(`[Mock Backend] POST /consentRequests id=${consentRequestId} para user=${userId}`);
 
-    consentRequests[consentRequestId] = req.body;
-
-    // Simular processamento assíncrono
-    setTimeout(async () => {
-        try {
-            const authUri = `${callbackUri}/linking/request-consent/${consentRequestId}/authenticate`;
-
-            // Transformar scopes para o formato que o Switch espera (v2.0)
-            const scopesOut = scopes.map(s => ({
-                address: s.address || s.accountId || `${fspId}.msisdn.${userId}`,
-                actions: s.actions
-            }));
-
-            const callbackBody = {
-                authChannels: ["Web"],
-                authUri,
-                callbackUri,
-                scopes: scopesOut
-            };
-
-            const url = `${tpApiUrl}/consentRequests/${consentRequestId}`;
-            console.log(`[DFSP Node] Enviando PUT Callback para ${url}`);
-
-            await axios.put(url, callbackBody, {
-                headers: {
-                    'Content-Type': 'application/vnd.interoperability.consentRequests+json;version=2.0',
-                    'Accept': 'application/vnd.interoperability.consentRequests+json;version=2.0',
-                    'FSPIOP-Source': fspId,
-                    'FSPIOP-Destination': fspiSource,
-                    'Date': new Date().toUTCString()
-                }
-            });
-            console.log(`[DFSP Node] PUT Callback enviado com sucesso!`);
-            
-            // Simular envio de SMS OTP
-            console.log(`[SMS] Enviando OTP para o usuário ${userId}...`);
-            
-        } catch (error) {
-            console.error(`[DFSP Node] Erro no callback:`, error.response?.data || error.message);
-        }
-    }, 500);
-
-    res.status(202).send();
+    res.status(200).json({
+        consentRequestId,
+        authToken: "123456" // OTP fixo para demonstração
+    });
 });
 
-// PATCH /consentRequests/{id} (Aprovação do PISP)
+/**
+ * 3. PATCH /consentRequests/{id}
+ */
 app.patch('/consentRequests/:id', (req, res) => {
-    const id = req.params.id;
-    console.log(`[DFSP Node] Recebido PATCH /consentRequests/${id}`);
-    
-    // Simular criação de Consentimento
-    setTimeout(async () => {
-        const consentId = `con-${Math.floor(Math.random() * 100000)}`;
-        const originalRequest = consentRequests[id];
+    const { id } = req.params;
+    const { authToken } = req.body;
+    console.log(`[Mock Backend] PATCH /consentRequests/${id} | OTP recebido: ${authToken}`);
 
-        const callbackBody = {
-            consentId: consentId,
-            consentRequestId: id,
-            scopes: originalRequest?.scopes || [],
-            status: "ISSUED"
-        };
-
-        const url = `${tpApiUrl}/consents`;
-        console.log(`[DFSP Node] Criando Consentimento POST ${url}`);
-
-        await axios.post(url, callbackBody, {
-            headers: {
-                'Content-Type': 'application/vnd.interoperability.thirdparty+json;version=1.0',
-                'FSPIOP-Source': fspId,
-                'FSPIOP-Destination': 'centralauth',
-                'Date': new Date().toUTCString()
+    res.status(200).json({
+        consentRequestId: id,
+        status: "ISSUED",
+        scopes: [
+            {
+                address: "bca.msisdn.2389389274",
+                actions: ["ACCOUNTS_GET_BALANCE", "ACCOUNTS_TRANSFER"]
             }
-        });
-    }, 500);
+        ]
+    });
+});
 
-    res.status(202).send();
+/**
+ * 4. POST /consents/{id}/validate
+ */
+app.post('/consents/:id/validate', (req, res) => {
+    console.log(`[Mock Backend] POST /consents/${req.params.id}/validate`);
+    res.json({ isValid: true });
+});
+
+/**
+ * 5. POST /thirdpartyRequests/transactions
+ */
+app.post('/thirdpartyRequests/transactions', (req, res) => {
+    const { transactionRequestId } = req.body;
+    console.log(`[Mock Backend] POST /thirdpartyRequests/transactions id=${transactionRequestId}`);
+    
+    res.json({
+        transactionRequestId,
+        status: "RECEIVED"
+    });
 });
 
 app.listen(port, () => {
-    console.log(`[DFSP Node] BCA Simulator rodando em http://localhost:${port}`);
+    console.log(`\n[Mock Backend] Rodando em http://localhost:${port}`);
+    console.log(`[Mock Backend] Pronto para ser usado como BACKEND pelo thirdparty-sdk\n`);
 });
