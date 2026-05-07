@@ -150,26 +150,17 @@ app.post('/consentRequests', (req, res) => {
   consentRequests[consentRequestId] = { consentRequestId, userId, scopes, authChannels, callbackUri };
   res.status(202).send();
 
-  // thirdparty-sdk v15.1.3 pode adicionar "WEB" automaticamente ao authChannels.
-  // Quando WEB está presente, o tp-api-svc v15.1.5 exige authUri (sem authToken).
-  // Quando só OTP, exige authToken (sem authUri).
-  const incluiWeb = Array.isArray(authChannels) && authChannels.includes('WEB');
-
-  const callbackBody = {
+  // thirdparty-sdk v15.1.3 injeta sempre ["OTP","WEB"] no authChannels (hardcoded).
+  // tp-api-svc v15.1.5 exige authUri quando WEB está presente.
+  // Solução: enviar sempre authToken + authUri com authChannels: ["OTP"].
+  after(400, () => callback('PUT', `/consentRequests/${consentRequestId}`, {
+    consentRequestId,
     scopes:       transformScopes(scopes),
-    authChannels: ['OTP'],      // forçar sempre OTP — ignorar WEB injectado pelo SDK
+    authChannels: ['OTP'],
     callbackUri:  callbackUri || '',
-    authToken:    '123456',     // OTP fixo para demo
-  };
-
-  if (incluiWeb) {
-    // Hub insiste em WEB: incluir authUri e remover authToken (campos mutuamente exclusivos)
-    callbackBody.authChannels = ['OTP', 'WEB'];
-    callbackBody.authUri = `http://${FSP_ID}-auth.kretxeucv.cv/authorize?consentRequestId=${consentRequestId}`;
-    delete callbackBody.authToken;
-  }
-
-  after(400, () => callback('PUT', `/consentRequests/${consentRequestId}`, callbackBody, fspiSource));
+    authToken:    '123456',
+    authUri:      `http://${FSP_ID}.kretxeucv.cv/authorize?id=${consentRequestId}`,
+  }, fspiSource));
 });
 
 /**
