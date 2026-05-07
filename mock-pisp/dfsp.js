@@ -45,6 +45,7 @@ app.post('/consentRequests', (req, res) => {
 
     res.status(200).json({
         consentRequestId,
+        authChannels: ["OTP"],
         authToken: "123456" // OTP fixo para demonstração
     });
 });

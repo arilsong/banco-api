@@ -79,6 +79,7 @@ public class ThirdPartyService {
 
         return Map.of(
             "consentRequestId", consentRequestId,
+            "authChannels", List.of("OTP"),
             "authToken", "123456" // OTP fixo para testes
         );
     }
