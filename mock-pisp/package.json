@@ -5,7 +5,10 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "dfsp": "node dfsp.js",
+    "dfsp:bca": "PORT=8081 FSP_ID=bca node dfsp.js",
+    "dfsp:caixa": "PORT=8082 FSP_ID=caixa node dfsp.js"
   },
   "dependencies": {
     "axios": "^1.6.0",

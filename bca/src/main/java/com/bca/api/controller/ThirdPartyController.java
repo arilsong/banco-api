@@ -20,46 +20,65 @@ public class ThirdPartyController {
 
     /**
      * GET /accounts/{userId} — versão Third Party API.
-     * Só activa quando o Hub envia o header FSPIOP-Source (pedido Mojaloop).
-     * O endpoint original em AccountsController continua a funcionar para
-     * chamadas internas sem esse header.
+     * Só activa quando o Hub envia o header FSPIOP-Source.
+     * O endpoint original em AccountsController continua a funcionar
+     * para chamadas internas sem esse header.
      */
     @GetMapping(value = "/accounts/{userId}", headers = "FSPIOP-Source")
-    public ResponseEntity<Map<String, Object>> getAccounts(
-            @PathVariable String userId) {
-        log.info("GET /accounts/{} (Simples)", userId);
-        return ResponseEntity.ok(thirdPartyService.getAccountsSimple(userId));
+    public ResponseEntity<Void> getAccounts(
+            @PathVariable String userId,
+            @RequestHeader("FSPIOP-Source") String fspiSource) {
+        log.info("GET /accounts/{} — Hub FSPIOP-Source={}", userId, fspiSource);
+        thirdPartyService.sendAccountsCallback(userId, fspiSource);
+        return ResponseEntity.accepted().build();
     }
 
     @PostMapping("/consentRequests")
-    public ResponseEntity<Map<String, Object>> postConsentRequest(
-            @RequestBody Map<String, Object> body) {
-        log.info("POST /consentRequests id={} (Simples)", body.get("consentRequestId"));
-        return ResponseEntity.ok(thirdPartyService.handleConsentRequestSimple(body));
+    public ResponseEntity<Void> postConsentRequest(
+            @RequestBody Map<String, Object> body,
+            @RequestHeader(value = "FSPIOP-Source", defaultValue = "hub") String fspiSource) {
+        log.info("POST /consentRequests id={} de {}", body.get("consentRequestId"), fspiSource);
+        thirdPartyService.handleConsentRequest(body, fspiSource);
+        return ResponseEntity.accepted().build();
     }
 
     @PatchMapping("/consentRequests/{id}")
-    public ResponseEntity<Map<String, Object>> patchConsentRequest(
+    public ResponseEntity<Void> patchConsentRequest(
             @PathVariable String id,
-            @RequestBody Map<String, Object> body) {
-        log.info("PATCH /consentRequests/{} (Simples)", id);
-        return ResponseEntity.ok(thirdPartyService.handleConsentRequestPatchSimple(id, body));
+            @RequestBody Map<String, Object> body,
+            @RequestHeader(value = "FSPIOP-Source", defaultValue = "hub") String fspiSource) {
+        log.info("PATCH /consentRequests/{} de {}", id, fspiSource);
+        thirdPartyService.handleConsentRequestPatch(id, body, fspiSource);
+        return ResponseEntity.accepted().build();
     }
 
-    @PostMapping("/consents/{id}/validate")
-    public ResponseEntity<Map<String, Object>> validateConsent(
-            @PathVariable String id,
-            @RequestBody Map<String, Object> body) {
-        log.info("POST /consents/{}/validate (Simples)", id);
-        return ResponseEntity.ok(thirdPartyService.handleFidoValidate(id, body));
+    @PostMapping("/consents")
+    public ResponseEntity<Void> postConsent(
+            @RequestBody Map<String, Object> body,
+            @RequestHeader(value = "FSPIOP-Source", defaultValue = "hub") String fspiSource) {
+        log.info("POST /consents id={} de {}", body.get("consentId"), fspiSource);
+        thirdPartyService.handleConsent(body, fspiSource);
+        return ResponseEntity.accepted().build();
     }
 
     // ─── TRANSFER ────────────────────────────────────────────────────────────
 
     @PostMapping("/thirdpartyRequests/transactions")
-    public ResponseEntity<Map<String, Object>> postTransactionRequest(
-            @RequestBody Map<String, Object> body) {
-        log.info("POST /thirdpartyRequests/transactions (Simples)");
-        return ResponseEntity.ok(thirdPartyService.handleTransactionRequestSimple(body));
+    public ResponseEntity<Void> postTransactionRequest(
+            @RequestBody Map<String, Object> body,
+            @RequestHeader(value = "FSPIOP-Source", defaultValue = "hub") String fspiSource) {
+        log.info("POST /thirdpartyRequests/transactions id={} de {}", body.get("transactionRequestId"), fspiSource);
+        thirdPartyService.handleTransactionRequest(body, fspiSource);
+        return ResponseEntity.accepted().build();
+    }
+
+    @PutMapping("/thirdpartyRequests/authorizations/{id}")
+    public ResponseEntity<Void> putAuthorization(
+            @PathVariable String id,
+            @RequestBody Map<String, Object> body,
+            @RequestHeader(value = "FSPIOP-Source", defaultValue = "hub") String fspiSource) {
+        log.info("PUT /thirdpartyRequests/authorizations/{} de {}", id, fspiSource);
+        thirdPartyService.handleAuthorization(id, body, fspiSource);
+        return ResponseEntity.accepted().build();
     }
 }
