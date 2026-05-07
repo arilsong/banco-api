@@ -110,6 +110,7 @@ public class OutboundTransferService {
             Map<String, Object> quoteBody   = (Map<String, Object>) quoteMap.get("body");
             Map<String, Object> amountMap   = (Map<String, Object>) quoteBody.get("transferAmount");
             Map<String, Object> feeMap      = (Map<String, Object>) quoteBody.get("payeeFspFee");
+            Map<String, Object> payeeReceiveMap = (Map<String, Object>) quoteBody.get("payeeReceiveAmount");
 
             return TransferConfirmPartyResponse.builder()
                     .transferId((String) respBody.get("transferId"))
@@ -117,6 +118,9 @@ public class OutboundTransferService {
                             .transferAmount(new BigDecimal((String) amountMap.get("amount")).stripTrailingZeros().toPlainString())
                             .currency((String) amountMap.get("currency"))
                             .fee(feeMap != null ? new BigDecimal((String) feeMap.get("amount")).stripTrailingZeros().toPlainString() : "0")
+                            .feeCurrency(feeMap != null ? (String) feeMap.get("currency") : (String) amountMap.get("currency"))
+                            .payeeReceiveAmount(payeeReceiveMap != null ? new BigDecimal((String) payeeReceiveMap.get("amount")).stripTrailingZeros().toPlainString() : null)
+                            .payeeReceiveAmountCurrency(payeeReceiveMap != null ? (String) payeeReceiveMap.get("currency") : null)
                             .expiration((String) quoteBody.get("expiration"))
                             .build())
                     .build();

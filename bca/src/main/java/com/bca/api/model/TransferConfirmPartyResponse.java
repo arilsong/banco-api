@@ -23,6 +23,8 @@ public class TransferConfirmPartyResponse {
         private String transferAmountCurrency;
         private String payeeFspFee;
         private String payeeFspFeeCurrency;
+        private String payeeReceiveAmount;
+        private String payeeReceiveAmountCurrency;
         private String expiration;
     }
 }

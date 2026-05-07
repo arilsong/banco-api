@@ -21,6 +21,9 @@ public class TransferConfirmPartyResponse {
         private String transferAmount;
         private String currency;
         private String fee;
+        private String feeCurrency;
+        private String payeeReceiveAmount;
+        private String payeeReceiveAmountCurrency;
         private String expiration;
     }
 }
