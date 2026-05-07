@@ -94,7 +94,7 @@ app.post('/consentRequests', (req, res) => {
             }));
 
             const callbackBody = {
-                authChannels: ["OTP"],
+                authChannels: ["Web"],
                 authUri,
                 callbackUri,
                 scopes: scopesOut

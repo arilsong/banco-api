@@ -46,14 +46,18 @@ public class ThirdPartyService {
 
     // ─── LINKING ──────────────────────────────────────────────────────────────
 
-    public void sendAccountsCallback(String userId, String fspiDestination) {
-        List<Map<String, Object>> accounts = new ArrayList<>();
-
+    /**
+     * GET /accounts/{userId} — Retorna a lista de contas diretamente (Simples).
+     */
+    public Map<String, Object> getAccountsSimple(String userId) {
+        log.info("Buscando contas (Simples) para userId: {}", userId);
+        
+        List<Map<String, Object>> userAccounts = new ArrayList<>();
         accountRepository.findAll().stream()
                 .filter(acc -> userId.equals(acc.getMsisdn()))
                 .forEach(acc -> {
                     String accountId = fspId + ".msisdn." + acc.getMsisdn();
-                    accounts.add(Map.of(
+                    userAccounts.add(Map.of(
                             "accountNickname", buildNickname(acc),
                             "id", accountId,
                             "currency", acc.getCurrency() != null ? acc.getCurrency() : fspCurrency,
@@ -61,83 +65,37 @@ public class ThirdPartyService {
                     ));
                 });
 
-        if (accounts.isEmpty()) {
-            log.warn("Nenhuma conta encontrada para userId={}", userId);
-        }
-
-        CompletableFuture.runAsync(() -> {
-            try {
-                HttpHeaders headers = buildTpHeaders(fspiDestination);
-                Map<String, Object> body = Map.of("accounts", accounts);
-                String url = tpApiUrl + "/accounts/" + userId;
-                log.info("Callback accounts → PUT {}", url);
-                sendJson(HttpMethod.PUT, url, body, headers);
-            } catch (Exception e) {
-                log.error("Erro no callback accounts: {}", e.getMessage());
-            }
-        });
+        return Map.of("accounts", userAccounts);
     }
 
-    // ─── CONSENT REQUESTS ────────────────────────────────────────────────────
-
-    public void handleConsentRequest(Map<String, Object> body, String fspiSource) {
+    /**
+     * POST /consentRequests — Responde síncronamente ao SDK (Simples).
+     */
+    public Map<String, Object> handleConsentRequestSimple(Map<String, Object> body) {
         String consentRequestId = (String) body.get("consentRequestId");
+        log.info("Processando pedido de consentimento (Simples) id={}", consentRequestId);
+        
         consentRequests.put(consentRequestId, new HashMap<>(body));
-        log.info("ConsentRequest recebido: id={}", consentRequestId);
 
-        CompletableFuture.runAsync(() -> {
-            try {
-                // Headers específicos para consentRequests (media-type v2.0)
-                HttpHeaders headers = buildConsentRequestHeaders(fspiSource);
+        return Map.of(
+            "consentRequestId", consentRequestId,
+            "authToken", "123456" // OTP fixo para testes
+        );
+    }
 
-                // Scopes: usar accountId no formato fspId.msisdn.<numero>
-                List<Map<String, Object>> scopesOut = new ArrayList<>();
-                if (body.containsKey("scopes")) {
-                    @SuppressWarnings("unchecked")
-                    List<Map<String, Object>> incomingScopes = (List<Map<String, Object>>) body.get("scopes");
-                    for (Map<String, Object> scope : incomingScopes) {
-                        // Preferir 'address', fallback para 'accountId'
-                        String accountId = scope.containsKey("address")
-                                ? (String) scope.get("address")
-                                : (String) scope.get("accountId");
+    /**
+     * PATCH /consentRequests/{id} — PISP confirmou o OTP (Simples).
+     */
+    public Map<String, Object> handleConsentRequestPatchSimple(String id, Map<String, Object> body) {
+        log.info("PATCH /consentRequests/{} — OTP Confirmado: {}", id, body.get("authToken"));
 
-                        // Garantir prefixo fspId.msisdn. se for apenas o número
-                        if (accountId != null && !accountId.contains(".")) {
-                            accountId = fspId + ".msisdn." + accountId;
-                        }
-
-                        Map<String, Object> scopeOut = new LinkedHashMap<>();
-                        // O Switch Mojaloop exige o campo 'address' nos scopes
-                        scopeOut.put("address", accountId);
-                        scopeOut.put("actions", scope.get("actions"));
-                        scopesOut.add(scopeOut);
-                    }
-                }
-
-                // Construir authUri para canal OTP:
-                // http://<callbackUri>/linking/request-consent/{consentRequestId}/authenticate
-                String callbackUri = (String) body.get("callbackUri");
-                String authUri = (callbackUri != null ? callbackUri : "")
-                        + "/linking/request-consent/" + consentRequestId + "/authenticate";
-
-                // Body do PUT estritamente conforme schema FSPIOP v2.0
-                // APENAS 4 campos: authChannels, authUri, callbackUri, scopes
-                // O consentRequestId é removido do body pois causa erro de 'Too many elements' (já está no URL)
-                Map<String, Object> callbackBody = new LinkedHashMap<>();
-                callbackBody.put("authChannels", List.of("OTP"));
-                callbackBody.put("authUri", authUri);
-                callbackBody.put("callbackUri", callbackUri);
-                callbackBody.put("scopes", scopesOut);
-
-                String url = tpApiUrl + "/consentRequests/" + consentRequestId;
-                log.info("Callback consentRequests → PUT {} | authUri={} | Source={} | Dest={}",
-                        url, authUri, fspId, fspiSource);
-                sendJson(HttpMethod.PUT, url, callbackBody, headers);
-
-            } catch (Exception e) {
-                log.error("Erro no callback consentRequests para {}: {}", consentRequestId, e.getMessage());
-            }
-        });
+        Map<String, Object> originalRequest = consentRequests.get(id);
+        
+        return Map.of(
+            "consentRequestId", id,
+            "status", "ISSUED",
+            "scopes", originalRequest != null ? originalRequest.get("scopes") : new ArrayList<>()
+        );
     }
 
     public void handleConsentRequestPatch(String consentRequestId, Map<String, Object> body, String fspiSource) {
@@ -180,156 +138,32 @@ public class ThirdPartyService {
             try {
                 HttpHeaders headers = buildTpHeaders("centralauth");
 
-                @SuppressWarnings("unchecked")
-                Map<String, Object> incomingCredential = body.containsKey("credential")
-                        ? new HashMap<>((Map<String, Object>) body.get("credential"))
-                        : new HashMap<>();
-                incomingCredential.put("status", "VERIFIED");
-
-                Map<String, Object> callbackBody = new HashMap<>();
-                callbackBody.put("credential", incomingCredential);
-                callbackBody.put("status", "ACTIVE");
-
-                String url = tpApiUrl + "/consents/" + consentId;
-                log.info("Confirmar consent → PATCH {}", url);
-                sendJson(HttpMethod.PATCH, url, callbackBody, headers);
-            } catch (Exception e) {
-                log.error("Erro ao confirmar consent: {}", e.getMessage());
-            }
-        });
-    }
-
-    // ─── TRANSFER ────────────────────────────────────────────────────────────
-
-    public void handleTransactionRequest(Map<String, Object> body, String fspiSource) {
-        String transactionRequestId = (String) body.get("transactionRequestId");
-        String transactionId = UUID.randomUUID().toString();
-        String authorizationRequestId = UUID.randomUUID().toString();
-
-        Map<String, Object> txData = new HashMap<>(body);
-        txData.put("_transactionId", transactionId);
-        txData.put("_authorizationRequestId", authorizationRequestId);
-        txData.put("_fspiSource", fspiSource);
-        pendingTransactions.put(transactionRequestId, txData);
-        authorizationToTransaction.put(authorizationRequestId, transactionRequestId);
-        log.info("TransactionRequest recebido: id={}, authorizationId={}", transactionRequestId, authorizationRequestId);
-
-        CompletableFuture.runAsync(() -> {
-            try {
-                HttpHeaders headers = buildTpHeaders(fspiSource);
-
-                // Callback 1: confirmar recepção
-                Map<String, Object> receivedCallback = new HashMap<>();
-                receivedCallback.put("transactionId", transactionId);
-                receivedCallback.put("transactionRequestState", "RECEIVED");
-                String url1 = tpApiUrl + "/thirdpartyRequests/transactions/" + transactionRequestId;
-                log.info("Callback RECEIVED → PUT {}", url1);
-                sendJson(HttpMethod.PUT, url1, receivedCallback, headers);
-
-                Thread.sleep(300);
-
-                // Callback 2: pedir autorização ao PISP
-                @SuppressWarnings("unchecked")
-                Map<String, Object> amountMap = body.containsKey("amount")
-                        ? (Map<String, Object>) body.get("amount")
-                        : Map.of("currency", fspCurrency, "amount", "0");
-                String currency = (String) amountMap.getOrDefault("currency", fspCurrency);
-                String amount = (String) amountMap.getOrDefault("amount", "0");
-
-                String challenge = buildChallenge(transactionRequestId + ":" + transactionId);
-                Map<String, Object> moneyAmount = Map.of("currency", currency, "amount", amount);
-
-                Map<String, Object> authRequest = new LinkedHashMap<>();
-                authRequest.put("authorizationRequestId", authorizationRequestId);
-                authRequest.put("transactionRequestId", transactionRequestId);
-                authRequest.put("challenge", challenge);
-                authRequest.put("transferAmount", moneyAmount);
-                authRequest.put("payeeReceiveAmount", moneyAmount);
-                authRequest.put("fees", Map.of("currency", currency, "amount", "0"));
-                authRequest.put("payer", body.get("payer"));
-                authRequest.put("payee", body.get("payee"));
-                authRequest.put("transactionType", body.get("transactionType"));
-                authRequest.put("expiration", body.get("expiration"));
-
-                String url2 = tpApiUrl + "/thirdpartyRequests/authorizations";
-                log.info("Pedido de autorização → POST {}", url2);
-                sendJson(HttpMethod.POST, url2, authRequest, headers);
-
-            } catch (Exception e) {
-                log.error("Erro ao processar transactionRequest: {}", e.getMessage());
-            }
-        });
-    }
-
-    public void handleAuthorization(String authorizationRequestId, Map<String, Object> body, String fspiSource) {
-        String transactionRequestId = authorizationToTransaction.get(authorizationRequestId);
-        log.info("Authorization recebida: id={}, transactionRequestId={}", authorizationRequestId, transactionRequestId);
-
-        if (transactionRequestId == null) {
-            log.warn("Authorization sem transactionRequest correspondente: {}", authorizationRequestId);
-            return;
-        }
-
-        CompletableFuture.runAsync(() -> {
-            try {
-                // Para demo: aceitar sempre — em produção verificar assinatura FIDO
-                HttpHeaders headers = buildTpHeaders(fspiSource);
-                Map<String, Object> patchBody = Map.of("transactionRequestState", "ACCEPTED");
-                String url = tpApiUrl + "/thirdpartyRequests/transactions/" + transactionRequestId;
-                log.info("Transfer ACCEPTED → PATCH {}", url);
-                sendJson(HttpMethod.PATCH, url, patchBody, headers);
-            } catch (Exception e) {
-                log.error("Erro ao processar authorization: {}", e.getMessage());
-            }
-        });
-    }
-
-    // ─── HELPERS ─────────────────────────────────────────────────────────────
-
-    private void sendJson(HttpMethod method, String url, Object body, HttpHeaders headers) throws Exception {
-        String json = objectMapper.writeValueAsString(body);
-        HttpEntity<String> entity = new HttpEntity<>(json, headers);
-        restTemplate.exchange(url, method, entity, String.class);
-    }
-
-    private HttpHeaders buildTpHeaders(String fspiDestination) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Content-Type", "application/vnd.interoperability.thirdparty+json;version=1.0");
-        headers.set("Accept", "application/vnd.interoperability.thirdparty+json;version=1.0");
-        headers.set("FSPIOP-Source", fspId);
-        headers.set("FSPIOP-Destination", fspiDestination != null ? fspiDestination : "hub");
-        headers.set("Date", utcDate());
-        return headers;
+    /**
+     * POST /consents/{id}/validate — Validação FIDO (Simples).
+     */
+    public Map<String, Object> handleFidoValidate(String id, Map<String, Object> body) {
+        log.info("Validando credencial FIDO para consent {} | body: {}", id, body);
+        
+        return Map.of("isValid", true);
     }
 
     /**
-     * Headers específicos para o endpoint PUT /consentRequests/{ID}.
-     * O Switch Mojaloop usa o media-type consentRequests+json;version=2.0
-     * em vez do thirdparty+json genérico.
+     * POST /thirdpartyRequests/transactions — Iniciar pagamento (Simples).
      */
-    private HttpHeaders buildConsentRequestHeaders(String fspiDestination) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Content-Type", "application/vnd.interoperability.consentRequests+json;version=2.0");
-        headers.set("Accept", "application/vnd.interoperability.consentRequests+json;version=2.0");
-        headers.set("FSPIOP-Source", fspId);
-        headers.set("FSPIOP-Destination", fspiDestination != null ? fspiDestination : "hub");
-        headers.set("Date", utcDate());
-        return headers;
+    public Map<String, Object> handleTransactionRequestSimple(Map<String, Object> body) {
+        String transactionRequestId = (String) body.get("transactionRequestId");
+        log.info("Iniciando transação Third Party (Simples): {}", transactionRequestId);
+
+        // Armazenar para referência
+        pendingTransactions.put(transactionRequestId, new HashMap<>(body));
+
+        return Map.of(
+            "transactionRequestId", transactionRequestId,
+            "status", "RECEIVED"
+        );
     }
 
-    private String utcDate() {
-        return ZonedDateTime.now(ZoneOffset.UTC)
-                .format(DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.ENGLISH));
-    }
-
-    private String buildChallenge(String input) {
-        try {
-            byte[] hash = MessageDigest.getInstance("SHA-256").digest(input.getBytes());
-            return Base64.getEncoder().encodeToString(hash);
-        } catch (Exception e) {
-            return Base64.getEncoder().encodeToString(input.getBytes());
-        }
-    }
+    // ─── HELPERS ─────────────────────────────────────────────────────────────
 
     private String buildNickname(CoreAccount acc) {
         if (acc.getDisplayName() != null && !acc.getDisplayName().isBlank()) {

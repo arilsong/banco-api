@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  redis-bca-tp:
+    image: redis:6.2.4-alpine
+    container_name: redis-bca-tp
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bca-tp-net
+
+  thirdparty-sdk-bca:
+    image: mojaloop/thirdparty-sdk:v15.1.3
+    container_name: thirdparty-sdk-bca
+    ports:
+      - "4020:4020"   # Inbound  — Hub chama aqui
+      - "4021:4021"   # Outbound — vossa API Core chama aqui
+    restart: always
+    environment:
+      NODE_ENV: "production"
+      INBOUND_LISTEN_PORT: "4020"
+      OUTBOUND_LISTEN_PORT: "4021"
+      PISP_TRANSACTION_MODE: "false"
+      DFSP_ID: "bca"
+      PEER_ENDPOINT: "tp-api-svc.kretxeucv.cv:80"
+      ALS_ENDPOINT: "account-lookup-service.kretxeucv.cv:80"
+      QUOTES_ENDPOINT: "quoting-service.kretxeucv.cv:80"
+      TRANSFERS_ENDPOINT: "central-ledger.kretxeucv.cv:80"
+      REDIS_HOST: "redis-bca-tp"
+      REDIS_PORT: "6379"
+      DFSP_BACKEND_URI: "63.250.57.157:8081"
+      DFSP_BACKEND_HTTP_SCHEME: "http"
+      SDK_OUTGOING_URI: "63.250.57.157:4001"
+      SDK_OUTGOING_HTTP_SCHEME: "http"
+      VALIDATE_INBOUND_JWS: "false"
+      JWS_SIGN: "false"
+      LOG_LEVEL: "info"
+    volumes:
+      - ./config.json:/opt/app/dist/config/production.json
+    depends_on:
+      redis-bca-tp:
+        condition: service_healthy
+    networks:
+      - bca-tp-net
+
+networks:
+  bca-tp-net:
+    driver: bridge
