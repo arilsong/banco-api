@@ -125,6 +125,7 @@ public class ThirdPartyService {
                 callbackBody.put("consentRequestId", consentRequestId);
                 callbackBody.put("authChannels", body.get("authChannels"));
                 callbackBody.put("authUri", authUri);
+                callbackBody.put("callbackUri", callbackUri);
                 callbackBody.put("scopes", scopesOut);
 
                 String url = tpApiUrl + "/consentRequests/" + consentRequestId;
