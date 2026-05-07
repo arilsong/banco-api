@@ -88,8 +88,29 @@ public class ThirdPartyService {
         CompletableFuture.runAsync(() -> {
             try {
                 HttpHeaders headers = buildTpHeaders(fspiSource);
-                Map<String, Object> callbackBody = new HashMap<>(body);
+
+                // Transformar scopes: accountId → address
+                List<Map<String, Object>> transformedScopes = new ArrayList<>();
+                if (body.containsKey("scopes")) {
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> incomingScopes = (List<Map<String, Object>>) body.get("scopes");
+                    for (Map<String, Object> scope : incomingScopes) {
+                        String address = scope.containsKey("address")
+                                ? (String) scope.get("address")
+                                : (String) scope.get("accountId");
+                        Map<String, Object> newScope = new LinkedHashMap<>();
+                        newScope.put("address", address);
+                        newScope.put("actions", scope.get("actions"));
+                        transformedScopes.add(newScope);
+                    }
+                }
+
+                Map<String, Object> callbackBody = new LinkedHashMap<>();
+                callbackBody.put("scopes", transformedScopes);
+                callbackBody.put("authChannels", body.get("authChannels"));
+                callbackBody.put("callbackUri", body.get("callbackUri"));
                 callbackBody.put("authToken", "123456");
+
                 String url = tpApiUrl + "/consentRequests/" + consentRequestId;
                 log.info("Callback consentRequests → PUT {}", url);
                 sendJson(HttpMethod.PUT, url, callbackBody, headers);
