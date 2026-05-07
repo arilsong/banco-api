@@ -52,13 +52,12 @@ public class ThirdPartyController {
         return ResponseEntity.accepted().build();
     }
 
-    @PatchMapping("/consents/{id}")
-    public ResponseEntity<Void> patchConsent(
-            @PathVariable String id,
+    @PostMapping("/consents")
+    public ResponseEntity<Void> postConsent(
             @RequestBody Map<String, Object> body,
             @RequestHeader(value = "FSPIOP-Source", defaultValue = "hub") String fspiSource) {
-        log.info("PATCH /consents/{} de {}", id, fspiSource);
-        thirdPartyService.handleConsentPatch(id, body, fspiSource);
+        log.info("POST /consents id={} de {}", body.get("consentId"), fspiSource);
+        thirdPartyService.handleConsent(body, fspiSource);
         return ResponseEntity.accepted().build();
     }
 
