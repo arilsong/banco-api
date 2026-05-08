@@ -45,7 +45,7 @@ public class ThirdPartyController {
             @PathVariable("ID") String id,
             @RequestBody Map<String, Object> body) {
         log.info("POST /store/consentRequests/{}", id);
-        thirdPartyService.handleConsentRequestSync(body);
+        thirdPartyService.storeConsentRequestSync(id, body);
         return ResponseEntity.ok().build();
     }
 

@@ -83,6 +83,11 @@ public class ThirdPartyService {
         return response;
     }
 
+    public void storeConsentRequestSync(String id, Map<String, Object> body) {
+        consentRequests.put(id, new HashMap<>(body));
+        log.info("ConsentRequest armazenado: id={}", id);
+    }
+
     public Map<String, Object> validateConsentRequestSync(Map<String, Object> body) {
         String consentRequestId = (String) body.get("consentRequestId");
         log.info("Validating ConsentRequest: id={}", consentRequestId);
