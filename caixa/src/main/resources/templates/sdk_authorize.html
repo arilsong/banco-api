@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caixa | Autorização</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #008148;
+            --secondary: #005a9c;
+            --success: #10b981;
+            --dark: #0f172a;
+            --bg: #f8fafc;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--dark);
+        }
+
+        .auth-card {
+            background: #fff;
+            padding: 2.5rem;
+            border-radius: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            background: #f1f5f9;
+            padding: 1rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+        }
+
+        .avatar {
+            width: 50px;
+            height: 50px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            margin-right: 1rem;
+        }
+
+        .user-details { text-align: left; }
+        .user-name { font-weight: 700; margin: 0; }
+        .user-status { font-size: 0.85rem; color: #64748b; margin: 0; }
+
+        h2 { font-size: 1.5rem; margin-bottom: 1rem; color: var(--primary); }
+        p.desc { color: #475569; line-height: 1.6; margin-bottom: 2rem; }
+
+        .permissions-list {
+            text-align: left;
+            margin-bottom: 2rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+        }
+
+        .permission-item {
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .icon { color: var(--success); margin-right: 1rem; font-weight: bold; }
+
+        .actions { display: flex; gap: 1rem; }
+        .btn {
+            flex: 1;
+            padding: 1rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-confirm { background: var(--primary); color: white; }
+        .btn-cancel { background: #f1f5f9; color: #64748b; }
+    </style>
+</head>
+<body>
+    <div class="auth-card">
+        <div class="user-info">
+            <div class="avatar" th:text="${#strings.substring(user.username,0,1).toUpperCase()}">U</div>
+            <div class="user-details">
+                <p class="user-name" th:text="${user.username}">Utilizador</p>
+                <p class="user-status">Cliente Caixa Verificado</p>
+            </div>
+        </div>
+
+        <h2>Autorizar Acesso?</h2>
+        <p class="desc">A aplicação de terceiros está a solicitar acesso aos seus dados da Caixa para configurar o consentimento Mojaloop.</p>
+
+        <div class="permissions-list">
+            <div class="permission-item"><span class="icon">✓</span> Consultar saldos</div>
+            <div class="permission-item"><span class="icon">✓</span> Iniciar transferências</div>
+        </div>
+
+        <form th:action="@{/sdk/confirm}" method="post">
+            <div class="actions">
+                <button type="submit" name="action" value="cancel" class="btn btn-cancel">Recusar</button>
+                <button type="submit" name="action" value="confirm" class="btn btn-confirm">Autorizar Agora</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

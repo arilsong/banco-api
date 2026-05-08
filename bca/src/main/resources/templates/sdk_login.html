@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BCA | Login Seguro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #004a99;
+            --primary-light: #0066cc;
+            --secondary: #ffcc00;
+            --dark: #0f172a;
+            --glass: rgba(255, 255, 255, 0.95);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top left, #004a99, #0f172a);
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .login-card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            padding: 3rem;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 400px;
+            transform: translateY(0);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            color: var(--dark);
+        }
+
+        .login-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6);
+        }
+
+        .brand {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: -1px;
+        }
+
+        .brand p {
+            color: #64748b;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #475569;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            box-sizing: border-box;
+            background: #f8fafc;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(0, 74, 153, 0.1);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 15px -3px rgba(0, 74, 153, 0.3);
+        }
+
+        .btn-login:hover {
+            transform: scale(1.02);
+            filter: brightness(1.1);
+        }
+
+        .error-msg {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 1rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            border: 1px solid #fecaca;
+        }
+
+        .footer {
+            margin-top: 2rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        /* Animate entrance */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .login-card { animation: fadeIn 0.6s ease-out; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="brand">
+            <h1>BCA</h1>
+            <p>Portal de Autorização de Terceiros</p>
+        </div>
+        
+        <div th:if="${error}" class="error-msg" th:text="${error}"></div>
+        
+        <form th:action="@{/sdk/login}" method="post">
+            <div class="form-group">
+                <label for="username">Utilizador</label>
+                <input type="text" id="username" name="username" placeholder="Seu nome de utilizador" required autofocus>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Palavra-passe</label>
+                <input type="password" id="password" name="password" placeholder="••••••••" required>
+            </div>
+            
+            <button type="submit" class="btn-login">Aceder à Conta</button>
+        </form>
+        
+        <div class="footer">
+            &copy; 2026 Banco Comercial do Atlântico. Todos os direitos reservados.
+        </div>
+    </div>
+</body>
+</html>

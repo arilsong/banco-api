@@ -78,7 +78,23 @@ public class ThirdPartyService {
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("consentRequestId", consentRequestId);
         response.put("authChannels", List.of("WEB"));
-        response.put("authUri", "http://caixa.kretxeucv.cv/authorize?consentRequestId=" + consentRequestId);
+        response.put("authUri", "http://63.250.57.157:8082/sdk/authorize?consentRequestId=" + consentRequestId);
+
+        return response;
+    }
+
+    public Map<String, Object> validateConsentRequestSync(Map<String, Object> body) {
+        String consentRequestId = (String) body.get("consentRequestId");
+        log.info("Validating ConsentRequest (Caixa): id={}", consentRequestId);
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("authChannels", List.of("WEB"));
+        data.put("authUri", "http://63.250.57.157:8082/sdk/authorize?consentRequestId=" + consentRequestId);
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("isValid", true);
+        response.put("consentRequestId", consentRequestId);
+        response.put("data", data);
 
         return response;
     }

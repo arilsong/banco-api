@@ -1,0 +1,84 @@
+package com.bca.api.controller;
+
+import com.bca.api.core.model.CoreUser;
+import com.bca.api.core.repository.CoreUserRepository;
+import jakarta.servlet.http.HttpSession;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.Optional;
+
+@Controller
+@RequiredArgsConstructor
+@Slf4j
+@RequestMapping("/sdk")
+public class SdkAuthorizationController {
+
+    private final CoreUserRepository coreUserRepository;
+
+    @GetMapping("/authorize")
+    public String startSdkAuth(@RequestParam("consentRequestId") String consentRequestId, HttpSession session) {
+        log.info("Iniciando autorização SDK para consentRequestId: {}", consentRequestId);
+        session.setAttribute("sdkConsentRequestId", consentRequestId);
+        
+        CoreUser user = (CoreUser) session.getAttribute("sdkUser");
+        if (user == null) {
+            return "redirect:/sdk/login";
+        }
+        
+        return "redirect:/sdk/confirm";
+    }
+
+    @GetMapping("/login")
+    public String showSdkLogin(HttpSession session, Model model) {
+        if (session.getAttribute("sdkConsentRequestId") == null) {
+            return "redirect:/error";
+        }
+        return "sdk_login";
+    }
+
+    @PostMapping("/login")
+    public String processSdkLogin(@RequestParam("username") String username,
+                                 @RequestParam("password") String password,
+                                 HttpSession session, Model model) {
+        Optional<CoreUser> userOpt = coreUserRepository.findByUsername(username);
+
+        if (userOpt.isPresent() && userOpt.get().getPassword().equals(password)) {
+            session.setAttribute("sdkUser", userOpt.get());
+            return "redirect:/sdk/confirm";
+        }
+
+        model.addAttribute("error", "Credenciais de acesso inválidas.");
+        return "sdk_login";
+    }
+
+    @GetMapping("/confirm")
+    public String showSdkConfirm(HttpSession session, Model model) {
+        CoreUser user = (CoreUser) session.getAttribute("sdkUser");
+        String consentRequestId = (String) session.getAttribute("sdkConsentRequestId");
+        
+        if (user == null) return "redirect:/sdk/login";
+        if (consentRequestId == null) return "redirect:/error";
+        
+        model.addAttribute("user", user);
+        model.addAttribute("consentRequestId", consentRequestId);
+        return "sdk_authorize";
+    }
+
+    @PostMapping("/confirm")
+    public String processSdkConfirm(@RequestParam("action") String action, HttpSession session) {
+        String consentRequestId = (String) session.getAttribute("sdkConsentRequestId");
+        log.info("Ação de autorização SDK: {} para ID: {}", action, consentRequestId);
+        
+        // No fluxo do SDK v15, após a autorização WEB, o utilizador é redirecionado
+        // O SDK espera que o status mude para ISSUED via polling ou callback que ele mesmo gere.
+        // Simulamos o sucesso redirecionando para a página de sucesso padrão do ambiente de teste.
+        return "redirect:http://34.53.208.240:4015/success?consentRequestId=" + consentRequestId;
+    }
+}
