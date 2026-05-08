@@ -83,6 +83,19 @@ public class ThirdPartyService {
         return response;
     }
 
+    public Map<String, Object> validateConsentRequestSync(Map<String, Object> body) {
+        String consentRequestId = (String) body.get("consentRequestId");
+        log.info("Validating ConsentRequest: id={}", consentRequestId);
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("isValid", true);
+        response.put("consentRequestId", consentRequestId);
+        response.put("authChannels", List.of("WEB"));
+        response.put("authUri", "http://bca.kretxeucv.cv/authorize?consentRequestId=" + consentRequestId);
+
+        return response;
+    }
+
     public Map<String, Object> handleConsentRequestPatchSync(String consentRequestId, Map<String, Object> body) {
         Map<String, Object> originalRequest = consentRequests.getOrDefault(consentRequestId, new HashMap<>(body));
         log.info("ConsentRequest PATCH (OTP) recebido: id={} authToken={}", consentRequestId, body.get("authToken"));

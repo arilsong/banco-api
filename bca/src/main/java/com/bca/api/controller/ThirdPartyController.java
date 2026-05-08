@@ -34,6 +34,12 @@ public class ThirdPartyController {
         return ResponseEntity.ok(thirdPartyService.handleConsentRequestSync(body));
     }
 
+    @PostMapping("/validateConsentRequests")
+    public ResponseEntity<Map<String, Object>> validateConsentRequest(@RequestBody Map<String, Object> body) {
+        log.info("POST /validateConsentRequests id={}", body.get("consentRequestId"));
+        return ResponseEntity.ok(thirdPartyService.validateConsentRequestSync(body));
+    }
+
     @PatchMapping("/consentRequests/{id}")
     public ResponseEntity<Map<String, Object>> patchConsentRequest(
             @PathVariable String id,
