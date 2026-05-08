@@ -84,13 +84,18 @@ public class ThirdPartyService {
     }
 
     public void storeConsentRequestSync(String id, Map<String, Object> body) {
-        consentRequests.put(id, new HashMap<>(body));
+        Map<String, Object> existing = consentRequests.getOrDefault(id, new HashMap<>());
+        existing.putAll(body);
+        consentRequests.put(id, existing);
         log.info("ConsentRequest armazenado (Caixa): id={}", id);
     }
 
     public Map<String, Object> validateConsentRequestSync(Map<String, Object> body) {
         String consentRequestId = (String) body.get("consentRequestId");
         log.info("Validating ConsentRequest (Caixa): id={}", consentRequestId);
+
+        // Guardar o pedido que contém o callbackUri
+        consentRequests.put(consentRequestId, new HashMap<>(body));
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("authChannels", List.of("WEB"));
@@ -102,6 +107,14 @@ public class ThirdPartyService {
         response.put("data", data);
 
         return response;
+    }
+
+    public String getCallbackUri(String consentRequestId) {
+        Map<String, Object> request = consentRequests.get(consentRequestId);
+        if (request != null && request.containsKey("callbackUri")) {
+            return (String) request.get("callbackUri");
+        }
+        return null;
     }
 
     public Map<String, Object> handleConsentRequestPatchSync(String consentRequestId, Map<String, Object> body) {

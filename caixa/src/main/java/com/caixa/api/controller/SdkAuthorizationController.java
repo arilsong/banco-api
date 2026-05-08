@@ -21,6 +21,7 @@ import java.util.Optional;
 public class SdkAuthorizationController {
 
     private final CoreUserRepository coreUserRepository;
+    private final com.caixa.api.service.ThirdPartyService thirdPartyService;
 
     @GetMapping("/authorize")
     public String startSdkAuth(@RequestParam("consentRequestId") String consentRequestId, HttpSession session) {
@@ -74,9 +75,19 @@ public class SdkAuthorizationController {
     @PostMapping("/confirm")
     public String processSdkConfirm(@RequestParam("action") String action, HttpSession session) {
         String consentRequestId = (String) session.getAttribute("sdkConsentRequestId");
-        log.info("Ação de autorização SDK Caixa: {} para ID: {}", action, consentRequestId);
         
-        // Redireciona para o sucesso do PISP/SDK
-        return "redirect:http://34.53.208.240:4015/success?consentRequestId=" + consentRequestId;
+        // Gerar um authToken (simulação de um token seguro/OTP)
+        String authToken = java.util.UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+        log.info("Ação de autorização SDK Caixa: {} para ID: {}", action, consentRequestId);
+        log.info("Token gerado (authToken): {}", authToken);
+        
+        String callbackUri = thirdPartyService.getCallbackUri(consentRequestId);
+        if (callbackUri == null || callbackUri.isEmpty()) {
+            log.warn("callbackUri não encontrado para o consentRequestId {}", consentRequestId);
+            return "redirect:/error";
+        }
+        
+        // Redireciona para o callbackUri do PISP/SDK, enviando o authToken
+        return "redirect:" + callbackUri + "?consentRequestId=" + consentRequestId + "&authToken=" + authToken;
     }
 }
