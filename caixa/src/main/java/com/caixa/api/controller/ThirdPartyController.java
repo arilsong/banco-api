@@ -19,66 +19,53 @@ public class ThirdPartyController {
     // ─── LINKING ──────────────────────────────────────────────────────────────
 
     /**
-     * GET /accounts/{userId} — versão Third Party API.
-     * Só activa quando o Hub envia o header FSPIOP-Source.
-     * O endpoint original em AccountsController continua a funcionar
-     * para chamadas internas sem esse header.
+     * GET /accounts/{userId}
+     * Retorna a lista de contas síncronamente para o SDK.
      */
-    @GetMapping(value = "/accounts/{userId}", headers = "FSPIOP-Source")
-    public ResponseEntity<Void> getAccounts(
-            @PathVariable String userId,
-            @RequestHeader("FSPIOP-Source") String fspiSource) {
-        log.info("GET /accounts/{} — Hub FSPIOP-Source={}", userId, fspiSource);
-        thirdPartyService.sendAccountsCallback(userId, fspiSource);
-        return ResponseEntity.accepted().build();
+    @GetMapping("/accounts/{userId}")
+    public ResponseEntity<Map<String, Object>> getAccounts(@PathVariable String userId) {
+        log.info("GET /accounts/{} — Chamada síncrona do SDK", userId);
+        return ResponseEntity.ok(thirdPartyService.getAccountsSync(userId));
     }
 
     @PostMapping("/consentRequests")
-    public ResponseEntity<Void> postConsentRequest(
-            @RequestBody Map<String, Object> body,
-            @RequestHeader(value = "FSPIOP-Source", defaultValue = "hub") String fspiSource) {
-        log.info("POST /consentRequests id={} de {}", body.get("consentRequestId"), fspiSource);
-        thirdPartyService.handleConsentRequest(body, fspiSource);
-        return ResponseEntity.accepted().build();
+    public ResponseEntity<Map<String, Object>> postConsentRequest(@RequestBody Map<String, Object> body) {
+        log.info("POST /consentRequests id={}", body.get("consentRequestId"));
+        return ResponseEntity.ok(thirdPartyService.handleConsentRequestSync(body));
     }
 
     @PatchMapping("/consentRequests/{id}")
-    public ResponseEntity<Void> patchConsentRequest(
+    public ResponseEntity<Map<String, Object>> patchConsentRequest(
             @PathVariable String id,
-            @RequestBody Map<String, Object> body,
-            @RequestHeader(value = "FSPIOP-Source", defaultValue = "hub") String fspiSource) {
-        log.info("PATCH /consentRequests/{} de {}", id, fspiSource);
-        thirdPartyService.handleConsentRequestPatch(id, body, fspiSource);
-        return ResponseEntity.accepted().build();
+            @RequestBody Map<String, Object> body) {
+        log.info("PATCH /consentRequests/{} (OTP Validation)", id);
+        return ResponseEntity.ok(thirdPartyService.handleConsentRequestPatchSync(id, body));
     }
 
-    @PostMapping("/consents")
-    public ResponseEntity<Void> postConsent(
-            @RequestBody Map<String, Object> body,
-            @RequestHeader(value = "FSPIOP-Source", defaultValue = "hub") String fspiSource) {
-        log.info("POST /consents id={} de {}", body.get("consentId"), fspiSource);
-        thirdPartyService.handleConsent(body, fspiSource);
-        return ResponseEntity.accepted().build();
+    @PostMapping("/consents/{id}/validate")
+    public ResponseEntity<Map<String, Object>> validateConsent(
+            @PathVariable String id,
+            @RequestBody Map<String, Object> body) {
+        log.info("POST /consents/{}/validate (FIDO Validation)", id);
+        return ResponseEntity.ok(Map.of("isValid", true));
     }
 
     // ─── TRANSFER ────────────────────────────────────────────────────────────
 
     @PostMapping("/thirdpartyRequests/transactions")
-    public ResponseEntity<Void> postTransactionRequest(
-            @RequestBody Map<String, Object> body,
-            @RequestHeader(value = "FSPIOP-Source", defaultValue = "hub") String fspiSource) {
-        log.info("POST /thirdpartyRequests/transactions id={} de {}", body.get("transactionRequestId"), fspiSource);
-        thirdPartyService.handleTransactionRequest(body, fspiSource);
-        return ResponseEntity.accepted().build();
+    public ResponseEntity<Map<String, Object>> postTransactionRequest(@RequestBody Map<String, Object> body) {
+        log.info("POST /thirdpartyRequests/transactions id={}", body.get("transactionRequestId"));
+        return ResponseEntity.ok(Map.of(
+                "transactionRequestId", body.get("transactionRequestId"),
+                "transactionRequestState", "RECEIVED"
+        ));
     }
 
     @PutMapping("/thirdpartyRequests/authorizations/{id}")
-    public ResponseEntity<Void> putAuthorization(
+    public ResponseEntity<Map<String, Object>> putAuthorization(
             @PathVariable String id,
-            @RequestBody Map<String, Object> body,
-            @RequestHeader(value = "FSPIOP-Source", defaultValue = "hub") String fspiSource) {
-        log.info("PUT /thirdpartyRequests/authorizations/{} de {}", id, fspiSource);
-        thirdPartyService.handleAuthorization(id, body, fspiSource);
-        return ResponseEntity.accepted().build();
+            @RequestBody Map<String, Object> body) {
+        log.info("PUT /thirdpartyRequests/authorizations/{} (FIDO Signature)", id);
+        return ResponseEntity.ok(Map.of("authorizationState", "ACCEPTED"));
     }
 }

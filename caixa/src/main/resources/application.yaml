@@ -30,7 +30,7 @@ sdk:
 
 tp:
   api:
-    url: http://tp-api-svc.kretxeucv.cv
+    url: http://34.53.208.240:4021
 
 fee:
   percentage: 1.0   # taxa em percentagem do montante (ex: 1.0 = 1%)

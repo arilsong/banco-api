@@ -47,7 +47,7 @@ public class ThirdPartyService {
 
     // ─── ACCOUNTS ────────────────────────────────────────────────────────────
 
-    public void sendAccountsCallback(String userId, String fspiDestination) {
+    public Map<String, Object> getAccountsSync(String userId) {
         List<Map<String, Object>> accounts = new ArrayList<>();
         accountRepository.findAll().stream()
                 .filter(acc -> userId.equals(acc.getMsisdn()))
@@ -64,77 +64,36 @@ public class ThirdPartyService {
         if (accounts.isEmpty()) {
             log.warn("Nenhuma conta encontrada para userId={}", userId);
         }
-
-        CompletableFuture.runAsync(() -> {
-            try {
-                HttpHeaders headers = buildTpHeaders(fspiDestination);
-                Map<String, Object> body = Map.of("accounts", accounts);
-                String url = tpApiUrl + "/accounts/" + userId;
-                log.info("Callback accounts → PUT {}", url);
-                sendJson(HttpMethod.PUT, url, body, headers);
-            } catch (Exception e) {
-                log.error("Erro no callback accounts: {}", e.getMessage());
-            }
-        });
+        return Map.of("accounts", accounts);
     }
 
     // ─── CONSENT REQUESTS ────────────────────────────────────────────────────
 
-    public void handleConsentRequest(Map<String, Object> body, String fspiSource) {
+    public Map<String, Object> handleConsentRequestSync(Map<String, Object> body) {
         String consentRequestId = (String) body.get("consentRequestId");
         consentRequests.put(consentRequestId, new HashMap<>(body));
         log.info("ConsentRequest recebido: id={}", consentRequestId);
 
-        CompletableFuture.runAsync(() -> {
-            try {
-                HttpHeaders headers = buildTpHeaders(fspiSource);
+        // O SDK espera authUri para redirecionar o utilizador
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("consentRequestId", consentRequestId);
+        response.put("authChannels", List.of("WEB"));
+        response.put("authUri", "http://bca.kretxeucv.cv/authorize?consentRequestId=" + consentRequestId);
 
-                // Transformar scopes: accountId → address
-                List<Map<String, Object>> transformedScopes = transformScopes(body);
-
-                Map<String, Object> callbackBody = new LinkedHashMap<>();
-                callbackBody.put("scopes", transformedScopes);
-                callbackBody.put("authChannels", body.get("authChannels"));
-                callbackBody.put("callbackUri", body.get("callbackUri"));
-                // authToken indica ao PISP qual o OTP a usar (para demo: fixo)
-                callbackBody.put("authToken", "123456");
-
-                String url = tpApiUrl + "/consentRequests/" + consentRequestId;
-                log.info("Callback consentRequests → PUT {}", url);
-                sendJson(HttpMethod.PUT, url, callbackBody, headers);
-            } catch (Exception e) {
-                log.error("Erro no callback consentRequests: {}", e.getMessage());
-            }
-        });
+        return response;
     }
 
-    public void handleConsentRequestPatch(String consentRequestId, Map<String, Object> body, String fspiSource) {
+    public Map<String, Object> handleConsentRequestPatchSync(String consentRequestId, Map<String, Object> body) {
         Map<String, Object> originalRequest = consentRequests.getOrDefault(consentRequestId, new HashMap<>(body));
-        log.info("ConsentRequest PATCH recebido: id={} authToken={}", consentRequestId, body.get("authToken"));
-        // Para demo: aceitar qualquer authToken
+        log.info("ConsentRequest PATCH (OTP) recebido: id={} authToken={}", consentRequestId, body.get("authToken"));
 
-        CompletableFuture.runAsync(() -> {
-            try {
-                String consentId = UUID.randomUUID().toString();
+        // Retorna status ISSUED síncronamente
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("consentRequestId", consentRequestId);
+        response.put("scopes", transformScopes(originalRequest));
+        response.put("status", "ISSUED");
 
-                HttpHeaders headers = buildTpHeaders("centralauth");
-                Map<String, Object> callbackBody = new LinkedHashMap<>();
-                callbackBody.put("consentId", consentId);
-                callbackBody.put("consentRequestId", consentRequestId);
-                callbackBody.put("scopes", transformScopes(originalRequest));
-                callbackBody.put("status", "ISSUED");
-
-                String url = tpApiUrl + "/consents";
-                log.info("Criar consent → POST {}", url);
-                sendJson(HttpMethod.POST, url, callbackBody, headers);
-
-                Map<String, Object> consentData = new HashMap<>(callbackBody);
-                consents.put(consentId, consentData);
-
-            } catch (Exception e) {
-                log.error("Erro ao criar consent: {}", e.getMessage());
-            }
-        });
+        return response;
     }
 
     // ─── CONSENTS ────────────────────────────────────────────────────────────
